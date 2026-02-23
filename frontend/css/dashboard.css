@@ -1,0 +1,108 @@
+/* ── DASHBOARD PAGE ──────────────────────────────────────────────────── */
+#page-dashboard {
+    padding: 32px 28px;
+}
+
+.start-run-btn {
+    width: 100%;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 24px var(--red-glow);
+    letter-spacing: 0.02em;
+    margin-bottom: 16px;
+}
+
+.start-run-btn:hover {
+    background: var(--red-dim);
+    box-shadow: 0 4px 28px rgba(255, 45, 45, 0.4);
+}
+
+.dash-row {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 14px;
+}
+
+.week-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 90px;
+}
+
+.bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.bar {
+    width: 100%;
+    background: var(--surface2);
+    border-radius: 4px 4px 0 0;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.bar:hover {
+    background: var(--red);
+}
+
+.bar.today {
+    background: var(--red);
+    opacity: 0.85;
+}
+
+.bar-day {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+}
+
+.run-list {
+    list-style: none;
+}
+
+.run-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.run-item:last-child {
+    border-bottom: none;
+}
+
+.ri-dist {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.ri-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.run-pace {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+}

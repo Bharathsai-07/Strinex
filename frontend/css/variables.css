@@ -1,0 +1,21 @@
+/* ── STRINEX DESIGN TOKENS ─────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg: #0a0a0b;
+  --surface: #111114;
+  --surface2: #18181d;
+  --border: #222228;
+
+  /* Brand */
+  --red: #ff2d2d;
+  --red-glow: rgba(255, 45, 45, 0.18);
+  --red-dim: #c41f1f;
+
+  /* Status */
+  --green: #22c55e;
+  --amber: #f59e0b;
+
+  /* Text */
+  --text: #f0f0f2;
+  --muted: #6b6b7a;
+}

@@ -1,0 +1,103 @@
+/* ── NAVIGATION BAR ─────────────────────────────────────────────────── */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(10, 10, 11, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 9999;
+}
+
+.logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+}
+
+.logo span {
+    color: var(--red);
+}
+
+.nav-links {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.nav-btn:hover,
+.nav-btn.active {
+    color: var(--text);
+    background: var(--surface2);
+}
+
+.nav-btn.active {
+    color: var(--red);
+}
+
+/* ── CLERK USER PILL ────────────────────────────────────────────────── */
+.clerk-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px 5px 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.clerk-pill:hover {
+    border-color: var(--red);
+}
+
+.avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--red), #ff6b6b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.clerk-name {
+    font-size: 0.78rem;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+}
+
+/* State when signed-out: show "Sign In" */
+.clerk-pill.signed-out .clerk-name {
+    color: var(--muted);
+}
+
+.clerk-pill.signed-out .avatar {
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    color: var(--muted);
+}

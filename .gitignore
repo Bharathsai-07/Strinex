@@ -1,0 +1,46 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Environment
+.env
+.env.local
+
+# Editor/OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Parcel, Next, etc.
+.cache/
+.next/
+
+# OneDrive/temp
+~$*
+~*.*
+
+# Frontend vendor maps (if any large files should be kept local)
+frontend/vendor/
+
+# Ignore local sensitive files
+*.key
+*.pem
+
+# Ignore local system files
+desktop.ini
+
+# Keep these patterns but adjust as needed
+package.json

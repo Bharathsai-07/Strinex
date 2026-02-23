@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@clerk/backend": "^2.32.0"
+  },
+  "scripts": {
+    "start": "npx serve frontend -l 3000 -c -1",
+    "mobile": "npx serve frontend -l tcp://0.0.0.0:3000"
+  }
+}

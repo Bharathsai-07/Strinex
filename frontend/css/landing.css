@@ -1,0 +1,100 @@
+/* ── LANDING PAGE ────────────────────────────────────────────────────── */
+#page-landing.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+}
+
+.landing-hero {
+    text-align: center;
+    padding: 60px 24px 40px;
+    max-width: 720px;
+}
+
+.hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--red-glow);
+    border: 1px solid rgba(255, 45, 45, 0.3);
+    color: var(--red);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+}
+
+.dot-blink {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: blink 1.2s infinite;
+}
+
+.hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 18px;
+}
+
+.hero-title .red {
+    color: var(--red);
+}
+
+.hero-sub {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.7;
+    max-width: 500px;
+    margin: 0 auto 36px;
+}
+
+.cta-group {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    max-width: 900px;
+    width: 100%;
+    margin: 60px auto 0;
+    border: 1px solid var(--border);
+}
+
+.feat-card {
+    background: var(--surface);
+    padding: 26px 22px;
+}
+
+.feat-icon {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+}
+
+.feat-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+}
+
+.feat-desc {
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.6;
+}

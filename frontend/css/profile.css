@@ -1,0 +1,138 @@
+/* ── PROFILE PAGE ────────────────────────────────────────────────────── */
+#page-profile {
+    padding: 32px 28px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-bottom: 36px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--red), #ff6b6b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    border: 3px solid rgba(255, 45, 45, 0.3);
+}
+
+.profile-info h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+}
+
+.profile-info .handle {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.clerk-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(108, 71, 255, 0.12);
+    border: 1px solid rgba(108, 71, 255, 0.3);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.68rem;
+    font-family: 'DM Mono', monospace;
+    color: #a78bfa;
+    margin-top: 8px;
+}
+
+.level-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 24px;
+}
+
+.level-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.level-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.level-val {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--red);
+}
+
+.xp-bar {
+    width: 100%;
+    height: 5px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--red), #ff6b6b);
+    border-radius: 3px;
+    width: 78%;
+}
+
+.badges-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.achievement {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 175px;
+}
+
+.ach-icon {
+    font-size: 1.3rem;
+}
+
+.ach-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.ach-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+}
+
+.achievement.locked {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
