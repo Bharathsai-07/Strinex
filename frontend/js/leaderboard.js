@@ -46,13 +46,12 @@ function renderLeaderboard() {
                 ${u.name}
                 ${u.me ? '<span style="font-size:0.68rem;color:var(--red)">(you)</span>' : ''}
               </div>
-              <div style="font-family:DM Mono,monospace;font-size:0.65rem;color:var(--muted)">${u.handle} · ${u.city}</div>
+              <div style="font-family:DM Mono,monospace;font-size:0.65rem;color:var(--muted)">${u.handle}</div>
             </div>
           </div>
         </td>
         <td><span style="font-family:Syne,sans-serif;font-weight:700">${u.dist}</span> <span style="color:var(--muted);font-size:0.78rem">km</span></td>
         <td>${streak}</td>
-        <td style="font-family:DM Mono,monospace;font-size:0.78rem;color:var(--muted)">${u.pace}/km</td>
       </tr>`;
   });
 }

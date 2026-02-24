@@ -3,6 +3,12 @@
     padding: 32px 28px;
 }
 
+@media (max-width: 640px) {
+    #page-dashboard {
+        padding: 20px 16px;
+    }
+}
+
 .start-run-btn {
     width: 100%;
     background: var(--red);
@@ -29,6 +35,12 @@
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: 14px;
+}
+
+@media (max-width: 900px) {
+    .dash-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .week-bars {

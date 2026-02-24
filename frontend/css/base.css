@@ -10,7 +10,7 @@
 html,
 body {
     height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
     background: var(--bg);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
@@ -44,12 +44,40 @@ body {
     position: fixed;
     inset: 56px 0 0 0;
     overflow-y: auto;
+    overflow-x: hidden;
     display: none;
+    max-width: 100vw;
 }
 
 .page.active {
     display: block;
 }
+
+/* Ensure nothing inside any page causes horizontal overflow */
+.page>* {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* ── MOBILE: Fix double padding on content pages ─────────────────────
+   Each page has CSS padding on .page AND an inner <div style="padding:32px 28px">.
+   On mobile we zero the outer CSS padding and shrink the inline div via !important.
+─────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+
+    #page-dashboard,
+    #page-profile,
+    #page-leaderboard {
+        padding: 0 !important;
+    }
+
+    #page-dashboard>div,
+    #page-profile>div,
+    #page-leaderboard>div {
+        padding: 16px !important;
+    }
+}
+
 
 /* ── ANIMATIONS ─────────────────────────────────────────────────────── */
 @keyframes blink {
@@ -86,11 +114,12 @@ body {
 #toast-container {
     position: fixed;
     bottom: 24px;
-    right: 24px;
+    right: 16px;
     z-index: 999999;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    max-width: calc(100vw - 32px);
 }
 
 .toast {

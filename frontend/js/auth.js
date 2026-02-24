@@ -128,8 +128,11 @@ function _onSignedIn(user) {
     if (homeBtn) homeBtn.style.display = 'none';
     document.querySelectorAll('.protected-link').forEach(el => el.style.display = 'block');
 
-    // Switch to dashboard (remove landing page for signed-in users)
-    showPage('dashboard');
+    // If user is currently on the landing page, move them to dashboard once.
+    const activePage = document.querySelector('.page.active');
+    if (activePage && activePage.id === 'page-landing') {
+        showPage('dashboard');
+    }
 
     if (window.Clerk) {
         window.Clerk.mountUserButton(ubtn, {
@@ -153,7 +156,7 @@ function _onSignedIn(user) {
 
     document.getElementById('profile-name').textContent = name;
     document.getElementById('profile-handle').textContent = '@' + name.replace(/\s+/g, '.').toLowerCase() + ' · Strinex';
-    document.getElementById('profile-clerk-id').textContent = '✓ Verified via Clerk · ' + (user.id || '');
+    // document.getElementById('profile-clerk-id').textContent = '✓ Verified via Clerk · ' + (user.id || '');
 
     // Dashboard greeting
     const sub = document.getElementById('dash-sub');

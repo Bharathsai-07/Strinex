@@ -101,3 +101,105 @@ nav {
     border: 1px dashed var(--border);
     color: var(--muted);
 }
+
+/* ── HAMBURGER MENU ─────────────────────────────────────────────────── */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0;
+}
+
+.hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hamburger.open span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger.open span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.hamburger.open span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ── MOBILE NAV OVERLAY ─────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    nav {
+        padding: 0 14px;
+    }
+
+    /* Logo fills remaining space, pushing pill+hamburger to right */
+    .logo {
+        flex: 1;
+    }
+
+    .hamburger {
+        display: flex;
+        order: 3;
+    }
+
+    #nav-pill {
+        order: 2;
+    }
+
+    /* Mobile nav dropdown */
+    .nav-links {
+        display: none;
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: rgba(10, 10, 11, 0.98);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        flex-direction: column;
+        gap: 0;
+        z-index: 10000;
+        padding: 6px 0 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .nav-links.open {
+        display: flex;
+    }
+
+    .nav-btn {
+        width: 100%;
+        text-align: left;
+        padding: 13px 20px;
+        border-radius: 0;
+        font-size: 0.8rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn:last-child {
+        border-bottom: none;
+    }
+
+    .clerk-name {
+        display: none;
+    }
+
+    .clerk-pill {
+        padding: 5px 8px;
+    }
+}

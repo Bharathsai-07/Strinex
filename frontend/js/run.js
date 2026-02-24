@@ -7,6 +7,7 @@
 
 // ── State ────────────────────────────────────────────────────────────────────
 let map, polyline, userMarker;
+let summaryMap, summaryPolyline;
 let routeCoords = [];
 let running = false;
 let clockTimer = null;
@@ -24,6 +25,9 @@ function initMap() {
     if (mapInited) return;
     mapInited = true;
 
+    // Render any saved run history cards
+    renderRunHistory();
+
     // Initialize basic map with default coordinates and zoom level 13
     map = L.map('map', { zoomControl: true }).setView(DEFAULT_POS, 13);
 
@@ -34,12 +38,12 @@ function initMap() {
     if (useMapTiler) {
         L.tileLayer(`https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${mapKey}`, {
             maxZoom: 19,
-            attribution: '© <a href="https://www.maptiler.com/copyright/">MapTiler</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            // attribution: '© <a href="https://www.maptiler.com/copyright/">MapTiler</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(map);
     } else {
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            // attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(map);
     }
 
@@ -93,6 +97,10 @@ function startRun() {
         navigator.geolocation.clearWatch(watchId);
         watchId = null;
     }
+
+    // Hide previous summary
+    const summaryEl = document.getElementById('run-summary');
+    if (summaryEl) summaryEl.style.display = 'none';
 
     running = true;
     elapsed = 0;
@@ -170,6 +178,67 @@ function stopRun() {
 
     if (elapsed > 0) {
         toast(`Run complete! Route saved. 🎉`, 'success', 5000);
+
+        // Populate summary overlay
+        const summaryEl = document.getElementById('run-summary');
+        if (summaryEl) {
+            const dist = _calcDist(routeCoords);
+            const durationStr = fmt(elapsed);
+            const pacePerKm = dist > 0 && elapsed > 0 ? (elapsed / 60) / dist : 0;
+            const paceStr = pacePerKm > 0
+                ? `${Math.floor(pacePerKm)}:${Math.round((pacePerKm % 1) * 60).toString().padStart(2, '0')}`
+                : '--:--';
+
+            const dEl = document.getElementById('summary-dist');
+            const tEl = document.getElementById('summary-time');
+            const pEl = document.getElementById('summary-pace');
+            const tsEl = document.getElementById('summary-timestamp');
+            const cEl = document.getElementById('summary-calories');
+            const eEl = document.getElementById('summary-elev');
+
+            if (dEl) dEl.textContent = `${dist.toFixed(2)} km`;
+            if (tEl) tEl.textContent = durationStr;
+            if (pEl) pEl.textContent = `${paceStr} min/km`;
+
+            // Human-readable completion timestamp
+            if (tsEl) {
+                const now = new Date();
+                const datePart = now.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                });
+                const timePart = now.toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+                tsEl.textContent = `${datePart} · ${timePart}`;
+            }
+
+            // Optional: very simple calorie and elevation estimates (placeholder)
+            if (cEl) {
+                const cals = dist > 0 ? Math.round(dist * 70) : 0; // ~70 kcal per km baseline
+                cEl.textContent = cals > 0 ? `${cals} kcal` : '—';
+            }
+            if (eEl) {
+                eEl.textContent = '—';
+            }
+
+            _showRunSummaryOverlay();
+
+            // Save run to history (localStorage)
+            _saveRunToHistory({
+                id: Date.now(),
+                distance: `${dist.toFixed(2)} km`,
+                distanceRaw: dist,
+                duration: durationStr,
+                durationRaw: elapsed,
+                pace: `${paceStr} min/km`,
+                calories: dist > 0 ? `${Math.round(dist * 70)} kcal` : null,
+                timestamp: tsEl ? tsEl.textContent : new Date().toLocaleString(),
+                gpsPoints: routeCoords.length,
+            });
+        }
     }
     setTimeout(() => _setGpsStatus('', 'GPS idle'), 4000);
 }
@@ -234,6 +303,78 @@ function _setRunBtn(text, className) {
     if (btn) { btn.textContent = text; btn.className = className; }
 }
 
+// Initialise the static Leaflet map inside the summary overlay
+function _ensureSummaryMap() {
+    if (summaryMap) return;
+    const container = document.getElementById('run-summary-map');
+    if (!container) return;
+
+    summaryMap = L.map('run-summary-map', {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false,
+    }).setView(DEFAULT_POS, 13);
+
+    const mapKey = (window.STRINEX_CONFIG || {}).MAPTILER_API_KEY;
+    const useMapTiler = mapKey && !mapKey.includes('PASTE_YOUR_MAPTILER_KEY_HERE');
+
+    if (useMapTiler) {
+        // Dark, high-contrast tiles for a photo-like summary
+        L.tileLayer(`https://api.maptiler.com/maps/darkmatter/256/{z}/{x}/{y}.png?key=${mapKey}`, {
+            maxZoom: 19,
+        }).addTo(summaryMap);
+    } else {
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(summaryMap);
+    }
+
+    summaryPolyline = L.polyline([], {
+        color: '#ff2d2d',
+        weight: 6,
+        opacity: 0.95,
+        lineJoin: 'round',
+        lineCap: 'round',
+    }).addTo(summaryMap);
+}
+
+function _showRunSummaryOverlay() {
+    if (!routeCoords || routeCoords.length < 1) return;
+    const summaryEl = document.getElementById('run-summary');
+    if (!summaryEl) return;
+
+    _ensureSummaryMap();
+    if (!summaryMap || !summaryPolyline) return;
+
+    summaryPolyline.setLatLngs(routeCoords);
+    const bounds = summaryPolyline.getBounds();
+
+    summaryEl.style.display = 'flex';
+
+    setTimeout(() => {
+        try {
+            if (bounds && bounds.isValid()) {
+                summaryMap.fitBounds(bounds, { padding: [32, 32] });
+            } else {
+                summaryMap.setView(routeCoords[0], 15);
+            }
+            summaryMap.invalidateSize();
+        } catch (e) {
+            console.warn('[run.js] Failed to render summary map:', e);
+        }
+    }, 0);
+}
+
+function closeRunSummary() {
+    const summaryEl = document.getElementById('run-summary');
+    if (summaryEl) summaryEl.style.display = 'none';
+}
+
 /** Show a note if not in secure context (HTTPS) - geolocation may fail on mobile. */
 function _maybeShowSecureContextWarning() {
     const secure = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -243,4 +384,87 @@ function _maybeShowSecureContextWarning() {
         note.className = 'gps-prompt gps-warning';
         note.innerHTML = '⚠️ <b>GPS may not work on mobile:</b> Use <b>HTTPS</b> (e.g. ngrok or deploy) — browsers block geolocation on plain HTTP.';
     }
+}
+
+// ── Run History (localStorage) ───────────────────────────────────────
+
+const RUN_HISTORY_KEY = 'strinex_run_history';
+
+function _getRunHistory() {
+    try {
+        return JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '[]');
+    } catch { return []; }
+}
+
+function _saveRunToHistory(runData) {
+    const history = _getRunHistory();
+    history.unshift(runData); // newest first
+    // Keep max 50 runs
+    if (history.length > 50) history.length = 50;
+    localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
+    renderRunHistory();
+}
+
+function renderRunHistory() {
+    const container = document.getElementById('run-history-cards');
+    const emptyEl = document.getElementById('run-history-empty');
+    const clearBtn = document.getElementById('clear-history-btn');
+    if (!container) return;
+
+    const history = _getRunHistory();
+
+    // Toggle empty state
+    if (emptyEl) emptyEl.style.display = history.length === 0 ? 'flex' : 'none';
+    if (clearBtn) clearBtn.style.display = history.length === 0 ? 'none' : 'inline-flex';
+
+    // Remove existing cards (keep the empty-state div)
+    container.querySelectorAll('.rh-card').forEach(c => c.remove());
+
+    history.forEach((run, idx) => {
+        const card = document.createElement('div');
+        card.className = 'rh-card';
+        card.innerHTML = `
+            <div class="rh-card-top">
+                <div class="rh-date">${run.timestamp || '—'}</div>
+                <button class="rh-delete" onclick="deleteRun(${run.id})" title="Delete run">✕</button>
+            </div>
+            <div class="rh-stats">
+                <div class="rh-stat">
+                    <div class="rh-stat-label">Distance</div>
+                    <div class="rh-stat-value rh-highlight">${run.distance}</div>
+                </div>
+                <div class="rh-stat">
+                    <div class="rh-stat-label">Duration</div>
+                    <div class="rh-stat-value">${run.duration}</div>
+                </div>
+                <div class="rh-stat">
+                    <div class="rh-stat-label">Pace</div>
+                    <div class="rh-stat-value">${run.pace}</div>
+                </div>
+                <div class="rh-stat">
+                    <div class="rh-stat-label">Calories</div>
+                    <div class="rh-stat-value">${run.calories || '—'}</div>
+                </div>
+            </div>
+            <div class="rh-stat-label" style="margin-top:4px;font-size:0.6rem;">${run.gpsPoints || 0} GPS points</div>
+            <button class="rh-ai-btn" onclick='openChatbot(${JSON.stringify(run).replace(/'/g, "&#39;")})'>
+                🤖 Ask AI Coach
+            </button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function clearRunHistory() {
+    if (!confirm('Clear all run history?')) return;
+    localStorage.removeItem(RUN_HISTORY_KEY);
+    renderRunHistory();
+    if (typeof toast === 'function') toast('Run history cleared', 'info');
+}
+
+function deleteRun(runId) {
+    let history = _getRunHistory();
+    history = history.filter(r => r.id !== runId);
+    localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
+    renderRunHistory();
 }

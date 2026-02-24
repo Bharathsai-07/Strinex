@@ -7,6 +7,7 @@
     display: flex;
     gap: 4px;
     margin-bottom: 22px;
+    flex-wrap: wrap;
 }
 
 .lb-tab {
@@ -30,6 +31,7 @@
 .lb-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .lb-table th {
@@ -39,14 +41,18 @@
     letter-spacing: 0.1em;
     color: var(--muted);
     text-align: left;
-    padding: 10px 16px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border);
+    overflow: hidden;
 }
 
 .lb-table td {
-    padding: 13px 16px;
+    padding: 11px 12px;
     border-bottom: 1px solid rgba(34, 34, 40, 0.6);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .lb-table tbody tr {
@@ -85,16 +91,77 @@
 .lb-user {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    min-width: 0;
 }
 
 .lb-avatar {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
+    flex-shrink: 0;
+}
+
+.lb-user>div {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.lb-user>div>div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Mobile: fit table to screen, no horizontal scroll ──────────────── */
+@media (max-width: 640px) {
+
+    /* Remove scrollable wrapper completely */
+    .card:has(.lb-table) {
+        overflow: hidden;
+    }
+
+    .lb-table {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .lb-table th,
+    .lb-table td {
+        padding: 9px 6px;
+        font-size: 0.72rem;
+    }
+
+    /* Rank column: narrow */
+    .lb-table th:nth-child(1),
+    .lb-table td:nth-child(1) {
+        width: 28px;
+    }
+
+    /* Runner column: takes remaining space */
+    .lb-table th:nth-child(2),
+    .lb-table td:nth-child(2) {
+        width: auto;
+    }
+
+    /* Distance, Streak, Pace: compact */
+    .lb-table th:nth-child(3),
+    .lb-table td:nth-child(3),
+    .lb-table th:nth-child(4),
+    .lb-table td:nth-child(4),
+    .lb-table th:nth-child(5),
+    .lb-table td:nth-child(5) {
+        width: 52px;
+    }
+
+    .lb-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 0.62rem;
+    }
 }

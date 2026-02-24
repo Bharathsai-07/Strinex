@@ -48,13 +48,28 @@
   <nav>
     <div class="logo">STRIN<span>X</span></div>
 
-    <div class="nav-links">
-      <button class="nav-btn active" id="nav-home" onclick="showPage('landing')">Home</button>
-      <button class="nav-btn protected-link" style="display:none;" onclick="showPage('dashboard')">Dashboard</button>
-      <button class="nav-btn protected-link" style="display:none;" onclick="showPage('run')">Live Run</button>
+    <!-- Hamburger: only visible on mobile -->
+    <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" onclick="(function(){
+        var btn = document.getElementById('hamburger-btn');
+        var links = document.getElementById('nav-links');
+        btn.classList.toggle('open');
+        links.classList.toggle('open');
+      })()">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="nav-links" id="nav-links">
+      <button class="nav-btn active" id="nav-home"
+        onclick="showPage('landing');document.getElementById('nav-links').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');">Home</button>
       <button class="nav-btn protected-link" style="display:none;"
-        onclick="showPage('leaderboard')">Leaderboard</button>
-      <button class="nav-btn protected-link" style="display:none;" onclick="showPage('profile')">Profile</button>
+        onclick="showPage('dashboard');document.getElementById('nav-links').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');">Dashboard</button>
+      <button class="nav-btn protected-link" style="display:none;"
+        onclick="showPage('run');document.getElementById('nav-links').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');">Live
+        Run</button>
+      <button class="nav-btn protected-link" style="display:none;"
+        onclick="showPage('leaderboard');document.getElementById('nav-links').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');">Leaderboard</button>
+      <button class="nav-btn protected-link" style="display:none;"
+        onclick="showPage('profile');document.getElementById('nav-links').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');">Profile</button>
     </div>
 
     <!-- Clerk user pill — updates dynamically when signed in/out -->
@@ -72,9 +87,9 @@
 ═══════════════════════════════════════════════════════════════ -->
   <div class="page active" id="page-landing">
     <div class="landing-hero">
-      <div class="hero-tag">
+      <!-- <div class="hero-tag">
         <div class="dot-blink"></div>Real-Time GPS Tracking
-      </div>
+      </div> -->
       <h1 class="hero-title">Track Every Stride.<br><span class="red">Own Every Run.</span></h1>
       <p class="hero-sub">
         Strinex maps your outdoor runs live on interactive maps, calculates real-time
@@ -86,32 +101,32 @@
     </div>
     <div class="features-grid">
       <div class="feat-card">
-        <div class="feat-icon">🗺️</div>
+        <!-- <div class="feat-icon">🗺️</div> -->
         <div class="feat-title">Live Map Tracking</div>
         <div class="feat-desc">Red polyline route drawn in real time on Leaflet.js maps with OpenStreetMap tiles.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">📍</div>
+        <!-- <div class="feat-icon">📍</div> -->
         <div class="feat-title">Browser GPS</div>
         <div class="feat-desc">Native Geolocation API streams your real coordinates — no app install needed.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">⚡</div>
+        <!-- <div class="feat-icon">⚡</div> -->
         <div class="feat-title">Instant Metrics</div>
         <div class="feat-desc">Distance, pace, speed and duration updated live every GPS fix.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">🔥</div>
+        <!-- <div class="feat-icon">🔥</div> -->
         <div class="feat-title">Streak Engine</div>
         <div class="feat-desc">Goal-based daily streaks to keep you consistent week over week.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">🏆</div>
+        <!-- <div class="feat-icon">🏆</div> -->
         <div class="feat-title">Leaderboard</div>
         <div class="feat-desc">Weekly distance rankings. Earn streak badges and climb globally.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">🔐</div>
+        <!-- <div class="feat-icon">🔐</div> -->
         <div class="feat-title">Clerk Auth</div>
         <div class="feat-desc">JWT-verified sessions — email, Google, or GitHub sign-in. Zero password storage.</div>
       </div>
@@ -131,13 +146,13 @@
       <div class="stats-grid">
         <div class="stat-card highlight">
           <div class="s-label">This Week</div>
-          <div class="s-value">24.6<span class="s-unit">km</span></div>
-          <div class="s-delta">↑ +3.2km from last week</div>
+          <div class="s-value">14<span class="s-unit">km</span></div>
+          <div class="s-delta">↑ +1.8km from last week</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Current Streak</div>
           <div class="s-value">🔥 7<span class="s-unit">days</span></div>
-          <div class="s-delta" style="color:var(--amber)">Goal: 10 km/day</div>
+          <div class="s-delta" style="color:var(--amber)">Goal: 2 km/day</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Avg Pace</div>
@@ -146,7 +161,7 @@
         </div>
         <div class="stat-card">
           <div class="s-label">Total Runs</div>
-          <div class="s-value">84</div>
+          <div class="s-value">18</div>
           <div class="s-delta" style="color:var(--muted)">Since Jan 2025</div>
         </div>
       </div>
@@ -190,28 +205,28 @@
           <ul class="run-list">
             <li class="run-item">
               <div>
-                <div class="ri-dist">8.4 km</div>
+                <div class="ri-dist">2.5 km</div>
                 <div class="ri-date">Today · 47:22</div>
               </div>
               <div class="run-pace">5:38/km</div>
             </li>
             <li class="run-item">
               <div>
-                <div class="ri-dist">5.1 km</div>
+                <div class="ri-dist">2.1 km</div>
                 <div class="ri-date">Yesterday · 29:44</div>
               </div>
               <div class="run-pace">5:50/km</div>
             </li>
             <li class="run-item">
               <div>
-                <div class="ri-dist">10.0 km</div>
+                <div class="ri-dist">2.3 km</div>
                 <div class="ri-date">2 days ago · 56:10</div>
               </div>
               <div class="run-pace">5:37/km</div>
             </li>
             <li class="run-item">
               <div>
-                <div class="ri-dist">6.8 km</div>
+                <div class="ri-dist">2.6 km</div>
                 <div class="ri-date">3 days ago · 39:02</div>
               </div>
               <div class="run-pace">5:44/km</div>
@@ -261,7 +276,7 @@
 
       <!-- GPS error/prompt message (updated dynamically by run.js) -->
       <div class="gps-prompt" id="gps-note">
-        📍 Click <b>START RUN</b> — your browser will ask for location permission.
+        Click <b>START RUN</b> — your browser will ask for location permission.
         Allow it to enable real GPS tracking.
       </div>
 
@@ -270,6 +285,84 @@
     </div>
 
     <div id="map"></div>
+
+    <!-- Full-screen run summary overlay (shown after STOP RUN) -->
+    <div class="run-summary-overlay" id="run-summary" style="display:none;">
+      <div class="run-summary-modal">
+        <button class="run-summary-close" onclick="closeRunSummary()">×</button>
+
+        <div class="run-summary-header">
+          <div class="title">STRINEX – Run Summary</div>
+          <div class="timestamp" id="summary-timestamp">—</div>
+        </div>
+
+        <div class="run-summary-map" id="run-summary-map"></div>
+
+        <div class="run-summary-metrics">
+          <div class="run-summary-metric">
+            <span class="label">Total Distance</span>
+            <span class="value" id="summary-dist">0.00 km</span>
+          </div>
+          <div class="run-summary-metric">
+            <span class="label">Total Duration</span>
+            <span class="value" id="summary-time">00:00</span>
+          </div>
+          <div class="run-summary-metric">
+            <span class="label">Average Pace</span>
+            <span class="value" id="summary-pace">--:-- min/km</span>
+          </div>
+          <div class="run-summary-metric optional">
+            <span class="label">Calories</span>
+            <span class="value" id="summary-calories">—</span>
+          </div>
+          <div class="run-summary-metric optional">
+            <span class="label">Elev. Gain</span>
+            <span class="value" id="summary-elev">—</span>
+          </div>
+        </div>
+
+        <div class="run-summary-footer">
+          Generated automatically after completion
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Run History Section ─────────────────────────────────────── -->
+    <div class="run-history-section" id="run-history-section">
+      <div class="run-history-header">
+        <div class="run-history-title"> Run History</div>
+        <button class="run-history-clear" id="clear-history-btn" onclick="clearRunHistory()" title="Clear all runs">🗑️
+          Clear</button>
+      </div>
+      <div class="run-history-cards" id="run-history-cards">
+        <div class="run-history-empty" id="run-history-empty">
+          <div class="empty-icon">📭</div>
+          <div>No runs yet. Start your first run above!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+     AI COACH CHATBOT DRAWER
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="chatbot-drawer" id="chatbot-drawer">
+    <div class="chatbot-header">
+      <div class="chatbot-title">AI Coach</div>
+      <button class="chatbot-close" onclick="closeChatbot()">×</button>
+    </div>
+    <div class="chat-thread" id="chat-thread"></div>
+    <div class="chat-input-bar">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Ask about diet, recovery, training…"
+        onkeydown="_chatKeyDown(event)" autocomplete="off" />
+      <button class="chat-send-btn" onclick="sendChatMessage()" title="Send">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      </button>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════
@@ -284,9 +377,6 @@
           onclick="this.closest('.lb-tabs').querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">🌍
           Global</button>
         <button class="lb-tab"
-          onclick="this.closest('.lb-tabs').querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">🏙️
-          City</button>
-        <button class="lb-tab"
           onclick="this.closest('.lb-tabs').querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">👥
           Friends</button>
       </div>
@@ -298,7 +388,6 @@
               <th>Runner</th>
               <th>Distance</th>
               <th>Streak</th>
-              <th>Pace</th>
             </tr>
           </thead>
           <tbody id="lb-body"></tbody>
@@ -328,7 +417,7 @@
         <div class="level-row">
           <div>
             <div class="level-label">Level</div>
-            <div class="level-val">LVL 12 — Road Warrior</div>
+            <div class="level-val">LVL '2' </div>
           </div>
           <div style="text-align:right">
             <div class="level-label">XP</div>
@@ -343,15 +432,15 @@
       <div class="stats-grid" style="margin-bottom:24px">
         <div class="stat-card highlight">
           <div class="s-label">Total Distance</div>
-          <div class="s-value">312<span class="s-unit">km</span></div>
+          <div class="s-value">71<span class="s-unit">km</span></div>
         </div>
         <div class="stat-card">
           <div class="s-label">Total Runs</div>
-          <div class="s-value">84</div>
+          <div class="s-value">34</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Best Streak</div>
-          <div class="s-value">🔥 21<span class="s-unit">days</span></div>
+          <div class="s-value">🔥 14<span class="s-unit">days</span></div>
         </div>
         <div class="stat-card">
           <div class="s-label">Best Pace</div>
@@ -426,6 +515,7 @@
   <script src="js/auth.js?v=2" defer></script>
   <script src="js/leaderboard.js" defer></script>
   <script src="js/run.js" defer></script>
+  <script src="js/chatbot.js" defer></script>
 
   <script>
     /**
