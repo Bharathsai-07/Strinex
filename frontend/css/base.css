@@ -43,6 +43,17 @@ body {
     filter: brightness(0.82) saturate(0.65);
 }
 
+/* Ensure Leaflet map displays properly */
+.leaflet-container {
+    display: block !important;
+    position: relative !important;
+}
+
+.leaflet-map-pane,
+.leaflet-control-container {
+    position: absolute !important;
+}
+
 /* ── PAGE SYSTEM ────────────────────────────────────────────────────── */
 .page {
     position: fixed;

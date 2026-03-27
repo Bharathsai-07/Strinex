@@ -4,6 +4,24 @@
 
 const pages = ['landing', 'dashboard', 'run', 'leaderboard', 'profile'];
 
+function requestRunMapInit(attempt = 0) {
+    const init = window.initMap;
+    if (typeof init === 'function') {
+        init();
+        return;
+    }
+
+    if (attempt < 10) {
+        setTimeout(() => requestRunMapInit(attempt + 1), 120);
+        return;
+    }
+
+    console.warn('[router] initMap is not available after retries. Ensure run.js is loaded.');
+    if (typeof toast === 'function') {
+        toast('Run map failed to initialize. Please refresh once.', 'error');
+    }
+}
+
 /** Show a page and update nav active states. */
 function showPage(id) {
     // Signed-in users: redirect landing → dashboard
@@ -25,7 +43,7 @@ function showPage(id) {
     });
     document.getElementById('page-' + id).classList.add('active');
 
-    if (id === 'run') setTimeout(initMap, 60);
+    if (id === 'run') setTimeout(() => requestRunMapInit(), 60);
 }
 
 /** Returns true if a Clerk user is currently signed in. */

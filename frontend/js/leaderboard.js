@@ -3,11 +3,11 @@
  * Source: localStorage run data created in run.js.
  */
 
-const RUN_HISTORY_KEY = 'strinex_run_history';
+const LEADERBOARD_RUN_HISTORY_KEY = 'strinex_run_history';
 
 function _getAllRuns() {
   try {
-    return JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(LEADERBOARD_RUN_HISTORY_KEY) || '[]');
   } catch {
     return [];
   }
@@ -185,5 +185,5 @@ function renderLeaderboard() {
 window.renderLeaderboard = renderLeaderboard;
 window.addEventListener('DOMContentLoaded', renderLeaderboard);
 window.addEventListener('storage', (evt) => {
-  if (evt.key === RUN_HISTORY_KEY) renderLeaderboard();
+  if (evt.key === LEADERBOARD_RUN_HISTORY_KEY) renderLeaderboard();
 });

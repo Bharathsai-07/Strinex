@@ -17,14 +17,47 @@ let watchId = null;
 
 /** Default map center coordinates */
 const DEFAULT_POS = [20.5937, 78.9629]; // Centre of India
-const RUN_HISTORY_KEY = 'strinex_run_history';
+const RUN_HISTORY_STORAGE_KEY = 'strinex_run_history';
 const RUN_META_KEY = 'strinex_run_meta';
 
 // ── Map initialisation ───────────────────────────────────────────────────────
 
+function _createOsmLayer() {
+    return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+    });
+}
+
+function _attachMapTiles(targetMap, mapStylePath = 'streets-v2') {
+    const mapKey = (window.STRINEX_CONFIG || {}).MAPTILER_API_KEY;
+    const useMapTiler = mapKey && !mapKey.includes('PASTE_YOUR_MAPTILER_KEY_HERE');
+
+    if (!useMapTiler) {
+        return _createOsmLayer().addTo(targetMap);
+    }
+
+    const mapTilerUrl = `https://api.maptiler.com/maps/${mapStylePath}/256/{z}/{x}/{y}.png?key=${mapKey}`;
+    const mapTilerLayer = L.tileLayer(mapTilerUrl, { maxZoom: 19 });
+
+    // If MapTiler key/quota/network fails, auto-fallback to OSM instead of black tiles.
+    mapTilerLayer.on('tileerror', () => {
+        if (!targetMap.hasLayer(mapTilerLayer)) return;
+        targetMap.removeLayer(mapTilerLayer);
+        _createOsmLayer().addTo(targetMap);
+        console.warn('[run.js] MapTiler tiles failed, switched to OpenStreetMap fallback.');
+    });
+
+    return mapTilerLayer.addTo(targetMap);
+}
+
 /** Called once by router.js the first time the run page is shown. */
 function initMap() {
-    if (mapInited) return;
+    if (mapInited) {
+        if (map) {
+            setTimeout(() => map.invalidateSize(), 80);
+        }
+        return;
+    }
     mapInited = true;
 
     // Render any saved run history cards
@@ -33,21 +66,7 @@ function initMap() {
     // Initialize basic map with default coordinates and zoom level 13
     map = L.map('map', { zoomControl: true }).setView(DEFAULT_POS, 13);
 
-    const mapKey = (window.STRINEX_CONFIG || {}).MAPTILER_API_KEY;
-    const useMapTiler = mapKey && !mapKey.includes('PASTE_YOUR_MAPTILER_KEY_HERE');
-
-    // Add tile layer
-    if (useMapTiler) {
-        L.tileLayer(`https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${mapKey}`, {
-            maxZoom: 19,
-            // attribution: '© <a href="https://www.maptiler.com/copyright/">MapTiler</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(map);
-    } else {
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            // attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(map);
-    }
+    _attachMapTiles(map, 'streets-v2');
 
     // Prepare red polyline for future GPS route drawing
     polyline = L.polyline([], {
@@ -79,7 +98,15 @@ function initMap() {
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+
+    // Ensure tiles render correctly after layout settles.
+    setTimeout(() => {
+        if (map) map.invalidateSize();
+    }, 140);
 }
+
+// Expose map init globally for router.js
+window.initMap = initMap;
 
 // ── Run control ──────────────────────────────────────────────────────────────
 
@@ -326,19 +353,7 @@ function _ensureSummaryMap() {
         tap: false,
     }).setView(DEFAULT_POS, 13);
 
-    const mapKey = (window.STRINEX_CONFIG || {}).MAPTILER_API_KEY;
-    const useMapTiler = mapKey && !mapKey.includes('PASTE_YOUR_MAPTILER_KEY_HERE');
-
-    if (useMapTiler) {
-        // Dark, high-contrast tiles for a photo-like summary
-        L.tileLayer(`https://api.maptiler.com/maps/darkmatter/256/{z}/{x}/{y}.png?key=${mapKey}`, {
-            maxZoom: 19,
-        }).addTo(summaryMap);
-    } else {
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-        }).addTo(summaryMap);
-    }
+    _attachMapTiles(summaryMap, 'darkmatter');
 
     summaryPolyline = L.polyline([], {
         color: '#ff2d2d',
@@ -427,7 +442,7 @@ function _getRunStartsCount() {
 
 function _getRunHistory() {
     try {
-        return JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '[]');
+        return JSON.parse(localStorage.getItem(RUN_HISTORY_STORAGE_KEY) || '[]');
     } catch { return []; }
 }
 
@@ -450,7 +465,7 @@ function _saveRunToHistory(runData) {
     history.unshift(normalized); // newest first
     // Keep max 50 runs
     if (history.length > 50) history.length = 50;
-    localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
+    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(history));
     renderRunHistory();
     updateDashboardStats();
     if (typeof renderLeaderboard === 'function') {
@@ -515,7 +530,7 @@ function clearRunHistory() {
     if (!confirm('Clear all run history?')) return;
     const userId = _getActiveUserId();
     const remaining = _getRunHistory().filter(run => run.userId && run.userId !== userId);
-    localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(remaining));
+    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(remaining));
     renderRunHistory();
     updateDashboardStats();
     if (typeof renderLeaderboard === 'function') {
@@ -531,7 +546,7 @@ function deleteRun(runId) {
     let history = _getRunHistory();
     const userId = _getActiveUserId();
     history = history.filter(r => !(r.id === runId && (!r.userId || r.userId === userId)));
-    localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
+    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(history));
     renderRunHistory();
     updateDashboardStats();
     if (typeof renderLeaderboard === 'function') {

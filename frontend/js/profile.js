@@ -3,11 +3,11 @@
  * Depends on: run.js (run history), auth.js (user context)
  */
 
-const RUN_HISTORY_KEY = 'strinex_run_history';
+const PROFILE_RUN_HISTORY_KEY = 'strinex_run_history';
 
 function _getAllUserRuns() {
     try {
-        const all = JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '[]');
+        const all = JSON.parse(localStorage.getItem(PROFILE_RUN_HISTORY_KEY) || '[]');
         const userId = window.__clerkUser?.id || 'guest';
         return all.filter(run => !run.userId || run.userId === userId);
     } catch {
