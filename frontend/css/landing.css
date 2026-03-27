@@ -11,6 +11,9 @@
     text-align: center;
     padding: 60px 24px 40px;
     max-width: 720px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .hero-tag {
@@ -41,9 +44,13 @@
     font-family: 'Syne', sans-serif;
     font-size: clamp(2.4rem, 6vw, 4rem);
     font-weight: 800;
-    line-height: 1.05;
+    line-height: 1.15;
     letter-spacing: -0.03em;
     margin-bottom: 18px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
 }
 
 .hero-title .red {
@@ -97,4 +104,99 @@
     color: var(--muted);
     font-size: 0.8rem;
     line-height: 1.6;
+}
+
+/* ── MOBILE RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .landing-hero {
+        padding: 40px 14px 30px;
+        max-width: 100%;
+    }
+
+    .hero-title {
+        font-size: clamp(1.8rem, 5.5vw, 2.8rem);
+        line-height: 1.2;
+        margin-bottom: 16px;
+        word-spacing: 0.1em;
+    }
+
+    .hero-sub {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin: 0 auto 28px;
+        max-width: 100%;
+    }
+
+    .features-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1px;
+        margin: 40px auto 0;
+        max-width: 100%;
+    }
+
+    .feat-card {
+        padding: 18px 14px;
+    }
+
+    .feat-title {
+        font-size: 0.85rem;
+    }
+
+    .feat-desc {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .landing-hero {
+        padding: 24px 8px 16px;
+    }
+
+    .hero-tag {
+        font-size: 0.65rem;
+        padding: 3px 10px;
+        margin-bottom: 14px;
+    }
+
+    .hero-title {
+        font-size: clamp(1.3rem, 4vw, 1.8rem);
+        line-height: 1.3;
+        margin-bottom: 10px;
+        word-spacing: 0.03em;
+    }
+
+    .hero-sub {
+        font-size: 0.82rem;
+        line-height: 1.5;
+        margin: 0 auto 16px;
+    }
+
+    .cta-group {
+        gap: 6px;
+    }
+
+    .btn-primary {
+        padding: 8px 14px;
+        font-size: 0.78rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 1px;
+        margin: 20px auto 0;
+    }
+
+    .feat-card {
+        padding: 10px 8px;
+    }
+
+    .feat-title {
+        font-size: 0.75rem;
+        margin-bottom: 2px;
+    }
+
+    .feat-desc {
+        font-size: 0.68rem;
+        line-height: 1.4;
+    }
 }

@@ -7,6 +7,65 @@
     #page-dashboard {
         padding: 20px 16px;
     }
+
+    .start-run-btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 0.9rem;
+        margin-bottom: 14px;
+    }
+
+    .dash-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .week-bars {
+        height: 80px;
+        gap: 6px;
+    }
+
+    .bar-day {
+        font-size: 0.58rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #page-dashboard {
+        padding: 16px 12px;
+    }
+
+    .start-run-btn {
+        padding: 10px;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+    }
+
+    .week-bars {
+        height: 70px;
+        gap: 4px;
+    }
+
+    .bar-day {
+        font-size: 0.55rem;
+    }
+
+    .run-list {
+        font-size: 0.8rem;
+    }
+
+    .run-item {
+        padding: 8px 0;
+    }
+
+    .ri-dist,
+    .ri-date {
+        font-size: 0.8rem;
+    }
+
+    .run-pace {
+        font-size: 0.8rem;
+    }
 }
 
 .start-run-btn {

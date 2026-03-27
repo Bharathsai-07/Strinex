@@ -14,6 +14,10 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* ── SCROLLBAR ──────────────────────────────────────────────────────── */
@@ -57,6 +61,13 @@ body {
 .page>* {
     max-width: 100%;
     box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Prevent text overflow */
+body, .page {
+    word-break: break-word;
 }
 
 /* ── MOBILE: Fix double padding on content pages ─────────────────────

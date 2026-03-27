@@ -164,4 +164,48 @@
         height: 24px;
         font-size: 0.62rem;
     }
+
+    #page-leaderboard {
+        padding: 18px 14px;
+    }
+
+    .lb-tabs {
+        margin-bottom: 16px;
+    }
+
+    .lb-tab {
+        padding: 6px 14px;
+        font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #page-leaderboard {
+        padding: 14px 10px;
+    }
+
+    .lb-table th,
+    .lb-table td {
+        padding: 7px 4px;
+        font-size: 0.65rem;
+    }
+
+    .lb-table th:nth-child(3),
+    .lb-table td:nth-child(3),
+    .lb-table th:nth-child(4),
+    .lb-table td:nth-child(4),
+    .lb-table th:nth-child(5),
+    .lb-table td:nth-child(5) {
+        width: 45px;
+    }
+
+    .lb-avatar {
+        width: 20px;
+        height: 20px;
+        font-size: 0.55rem;
+    }
+
+    .lb-user-name {
+        font-size: 0.7rem;
+    }
 }

@@ -77,6 +77,12 @@
     flex-shrink: 0;
 }
 
+@media (max-width: 480px) {
+    .run-mini-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .run-mini {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -101,9 +107,7 @@
 
 .run-ctrl-btn {
     width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
+        padding: 11px 14px;
     font-family: 'Syne', sans-serif;
     font-weight: 800;
     font-size: 0.88rem;
@@ -496,7 +500,7 @@
     bottom: 0;
     right: 0;
     width: min(460px, 100%);
-    height: 520px;
+    height: clamp(300px, 60vh, 520px);
     background: #0a0f1a;
     border-top: 1px solid rgba(148, 163, 184, 0.2);
     border-left: 1px solid rgba(148, 163, 184, 0.12);
@@ -739,6 +743,7 @@
         border-bottom: 1px solid var(--border);
         grid-row: unset;
         grid-column: unset;
+        padding: 12px 12px;
     }
 
     #map {
@@ -761,11 +766,211 @@
         grid-column: unset;
     }
 
+    .run-stat-big {
+        padding: 8px 10px;
+    }
+
+    .rsb-val {
+        font-size: 1.4rem;
+    }
+
+    .run-ctrl-btn {
+        width: 100%;
+        padding: 11px 14px;
+        border: none;
+        border-radius: 10px;
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
+    }
+
+    .gps-prompt {
+        font-size: 0.65rem;
+        padding: 5px 8px;
+    }
+
+    .coord-count {
+        font-size: 0.6rem;
+    }
+
     .chatbot-drawer {
         width: 100%;
+        height: clamp(280px, 50vh, 400px);
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+
+    .chat-thread {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .chat-bubble {
+        max-width: 95%;
+    }
+
+    .chat-input-bar {
+        padding: 10px 14px 12px;
+        gap: 6px;
+    }
+
+    .chat-input {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
+
+    .chat-send-btn {
+        width: 38px;
+        height: 38px;
     }
 
     .run-history-cards {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .run-panel {
+        padding: 10px 10px;
+        gap: 4px;
+    }
+
+    #map {
+        flex: 0 0 200px;
+        min-height: 200px;
+    }
+
+    .run-stat-big {
+        padding: 6px 8px;
+        border-radius: 8px;
+    }
+
+    .rsb-label {
+        font-size: 0.58rem;
+        margin-bottom: 0;
+    }
+
+    .rsb-val {
+        font-size: 1.2rem;
+    }
+
+    .run-mini-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .run-mini {
+        padding: 6px 7px;
+    }
+
+    .rml {
+        font-size: 0.55rem;
+        margin-bottom: 1px;
+    }
+
+    .rmv {
+        font-size: 0.85rem;
+    }
+
+    .run-ctrl-btn {
+        padding: 9px 12px;
+        font-size: 0.82rem;
+    }
+
+    .gps-prompt {
+        font-size: 0.62rem;
+        padding: 4px 7px;
+    }
+
+    .coord-count {
+        font-size: 0.58rem;
+        margin-top: 4px;
+    }
+
+    .chatbot-drawer {
+        height: clamp(250px, 45vh, 350px);
+    }
+
+    .chatbot-header {
+        padding: 10px 14px;
+    }
+
+    .chatbot-title {
+        font-size: 0.9rem;
+    }
+
+    .chatbot-close {
+        width: 24px;
+        height: 24px;
+        font-size: 16px;
+    }
+
+    .chat-thread {
+        padding: 10px 12px;
+    }
+
+    .chat-bubble {
+        gap: 6px;
+        max-width: 96%;
+    }
+
+    .chat-avatar {
+        width: 26px;
+        height: 26px;
+        font-size: 0.75rem;
+    }
+
+    .chat-content {
+        font-size: 0.78rem;
+        padding: 8px 12px;
+    }
+
+    .chat-input-bar {
+        padding: 8px 12px 10px;
+    }
+
+    .chat-input {
+        font-size: 0.78rem;
+        padding: 7px 10px;
+        border-radius: 8px;
+    }
+
+    .chat-send-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+    }
+
+    .run-history-section {
+        padding: 14px 16px 18px;
+    }
+
+    .run-history-title {
+        font-size: 0.95rem;
+    }
+
+    .rh-card {
+        padding: 12px 14px;
+    }
+
+    .rh-date {
+        font-size: 0.62rem;
+    }
+
+    .rh-stat-label {
+        font-size: 0.55rem;
+    }
+
+    .rh-stat-value {
+        font-size: 0.85rem;
+    }
+
+    .rh-ai-btn {
+        font-size: 0.75rem;
+        padding: 8px 12px;
     }
 }

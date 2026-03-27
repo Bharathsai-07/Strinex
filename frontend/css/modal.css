@@ -188,6 +188,111 @@
     background: rgba(255, 45, 45, 0.08);
 }
 
+/* ── RESPONSIVE ──────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .auth-modal {
+        width: 100%;
+        max-width: 90vw;
+        padding: 28px 24px;
+        border-radius: 14px;
+    }
+
+    .auth-modal h2 {
+        font-size: 1.25rem;
+    }
+
+    .auth-modal .sub {
+        font-size: 0.8rem;
+        margin-bottom: 18px;
+    }
+
+    .form-field {
+        margin-bottom: 12px;
+    }
+
+    .form-field label {
+        font-size: 0.7rem;
+        margin-bottom: 5px;
+    }
+
+    .form-field input {
+        padding: 8px 12px;
+        font-size: 0.86rem;
+    }
+
+    .social-btn {
+        padding: 9px;
+        font-size: 0.82rem;
+        margin-bottom: 8px;
+    }
+
+    .signout-btn {
+        padding: 9px;
+        font-size: 0.76rem;
+    }
+
+    .modal-close {
+        top: 14px;
+        right: 14px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-modal {
+        padding: 22px 18px;
+        border-radius: 12px;
+    }
+
+    .auth-modal h2 {
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+    }
+
+    .auth-modal .sub {
+        font-size: 0.75rem;
+        margin-bottom: 14px;
+    }
+
+    .form-field label {
+        font-size: 0.66rem;
+        margin-bottom: 4px;
+    }
+
+    .form-field input {
+        padding: 7px 10px;
+        font-size: 0.8rem;
+    }
+
+    .social-divider {
+        margin: 12px 0;
+        font-size: 0.7rem;
+    }
+
+    .social-btn {
+        padding: 8px;
+        font-size: 0.78rem;
+        margin-bottom: 6px;
+    }
+
+    .modal-close {
+        top: 10px;
+        right: 10px;
+        font-size: 1rem;
+    }
+
+    .signout-btn {
+        padding: 8px;
+        font-size: 0.72rem;
+        margin-top: 8px;
+    }
+
+    .auth-switch {
+        margin-top: 12px;
+        font-size: 0.75rem;
+    }
+}
+
 /* User info block inside modal when signed in */
 .user-info-block {
     text-align: center;
