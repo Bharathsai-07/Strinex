@@ -156,6 +156,12 @@ function _onSignedIn(user) {
     if (typeof updateDashboardStats === 'function') {
         updateDashboardStats();
     }
+    if (typeof renderLeaderboard === 'function') {
+        renderLeaderboard();
+    }
+    if (typeof updateProfileStats === 'function') {
+        updateProfileStats();
+    }
 
     toast(`Welcome back, ${name.split(' ')[0]}! 👋`, 'success');
 }
@@ -165,6 +171,12 @@ function _onSignedOut() {
     _setNavSignedOut();
     if (typeof updateDashboardStats === 'function') {
         updateDashboardStats();
+    }
+    if (typeof renderLeaderboard === 'function') {
+        renderLeaderboard();
+    }
+    if (typeof updateProfileStats === 'function') {
+        updateProfileStats();
     }
     showPage('landing');
 }

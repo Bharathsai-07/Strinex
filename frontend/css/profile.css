@@ -128,6 +128,7 @@
         flex: 1 1 calc(50% - 5px);
         min-width: 0;
         max-width: 100%;
+        opacity: 0.35;
     }
 }
 
@@ -140,6 +141,11 @@
     align-items: center;
     gap: 12px;
     min-width: 175px;
+    opacity: 0.35;
+}
+
+.achievement.first-run-achievement {
+    opacity: 1;
 }
 
 .ach-icon {
@@ -150,6 +156,7 @@
     font-family: 'Syne', sans-serif;
     font-weight: 700;
     font-size: 0.82rem;
+    
 }
 
 .ach-sub {

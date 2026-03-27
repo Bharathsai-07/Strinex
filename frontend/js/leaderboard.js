@@ -1,59 +1,189 @@
 /**
- * leaderboard.js — Leaderboard data and table rendering
+ * leaderboard.js — Weekly leaderboard from real run history.
+ * Source: localStorage run data created in run.js.
  */
 
-const lbData = [
-  { rank: 1, name: 'Arjun Sharma', handle: '@arjun_s', city: 'Hyderabad', dist: 89.4, streak: 14, pace: '5:12', col: '#ef4444' },
-  { rank: 2, name: 'Priya Nair', handle: '@priya_n', city: 'Bangalore', dist: 77.2, streak: 21, pace: '5:28', col: '#3b82f6' },
-  { rank: 3, name: 'Karan Mehta', handle: '@karan_m', city: 'Mumbai', dist: 65.8, streak: 9, pace: '5:35', col: '#22c55e' },
-  { rank: 4, name: 'You', handle: '@you', city: 'Your City', dist: 60.1, streak: 7, pace: '5:38', col: '#ff2d2d', me: true },
-  { rank: 5, name: 'Sneha Pillai', handle: '@sneha_p', city: 'Chennai', dist: 54.3, streak: 5, pace: '5:47', col: '#f59e0b' },
-  { rank: 6, name: 'Ravi Kumar', handle: '@ravi_k', city: 'Pune', dist: 48.9, streak: 3, pace: '5:55', col: '#8b5cf6' },
-  { rank: 7, name: 'Ananya Bose', handle: '@ananya_b', city: 'Kolkata', dist: 42.1, streak: 11, pace: '6:02', col: '#06b6d4' },
-  { rank: 8, name: 'Dev Patel', handle: '@dev_p', city: 'Delhi', dist: 37.7, streak: 2, pace: '6:14', col: '#84cc16' },
-];
+const RUN_HISTORY_KEY = 'strinex_run_history';
+
+function _getAllRuns() {
+  try {
+    return JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function _runTimestampMs(run) {
+  if (typeof run.endedAtMs === 'number' && Number.isFinite(run.endedAtMs)) return run.endedAtMs;
+  if (typeof run.id === 'number' && Number.isFinite(run.id)) return run.id;
+  const parsed = Date.parse(run.endedAtIso || run.timestamp || '');
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function _runDistanceKm(run) {
+  if (typeof run.distanceRaw === 'number' && Number.isFinite(run.distanceRaw)) return run.distanceRaw;
+  const parsed = parseFloat(String(run.distance || '').replace(/[^\d.]/g, ''));
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function _weekStartSunday(baseDate = new Date()) {
+  const d = new Date(baseDate);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function _dayKey(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function _stableColor(seed) {
+  const palette = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#e11d48'];
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+  return palette[Math.abs(hash) % palette.length];
+}
+
+function _computeWeeklyStreakDays(dayTotals, weekStartMs, nowMs) {
+  let streak = 0;
+  const cursor = new Date(nowMs);
+  cursor.setHours(0, 0, 0, 0);
+  while (cursor.getTime() >= weekStartMs) {
+    const key = _dayKey(cursor.getTime());
+    if ((dayTotals[key] || 0) >= 1) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+    break;
+  }
+  return streak;
+}
+
+function _buildLeaderboardRows() {
+  const now = new Date();
+  const weekStart = _weekStartSunday(now);
+  const nextWeekStart = new Date(weekStart);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
+  const runs = _getAllRuns()
+    .map(run => ({
+      ...run,
+      ts: _runTimestampMs(run),
+      dist: _runDistanceKm(run),
+    }))
+    .filter(run => run.ts >= weekStart.getTime() && run.ts < nextWeekStart.getTime())
+    .filter(run => run.userId && run.userId !== 'guest');
+
+  const map = {};
+  runs.forEach(run => {
+    if (!map[run.userId]) {
+      const name = run.userName || 'Runner';
+      map[run.userId] = {
+        userId: run.userId,
+        name,
+        handle: '@' + name.replace(/\s+/g, '.').toLowerCase(),
+        dist: 0,
+        dayTotals: {},
+      };
+    }
+    map[run.userId].dist += run.dist;
+    const k = _dayKey(run.ts);
+    map[run.userId].dayTotals[k] = (map[run.userId].dayTotals[k] || 0) + run.dist;
+  });
+
+  const entries = Object.values(map).map(entry => ({
+    ...entry,
+    streak: _computeWeeklyStreakDays(entry.dayTotals, weekStart.getTime(), now.getTime()),
+    col: _stableColor(entry.userId),
+  }));
+
+  entries.sort((a, b) => {
+    if (b.dist !== a.dist) return b.dist - a.dist;
+    if (b.streak !== a.streak) return b.streak - a.streak;
+    return a.name.localeCompare(b.name);
+  });
+
+  return {
+    entries: entries.map((e, idx) => ({ ...e, rank: idx + 1 })),
+    weekStart,
+    nextWeekStart,
+  };
+}
 
 function renderLeaderboard() {
   const body = document.getElementById('lb-body');
+  const weekNote = document.getElementById('lb-week-note');
+  const posNote = document.getElementById('lb-position-note');
   if (!body) return;
-  body.innerHTML = '';
 
-  // Personalise "You" row with the signed-in user name
-  const user = window.__clerkUser;
-  const meEntry = lbData.find(u => u.me);
-  if (meEntry && user) {
-    meEntry.name = user.fullName || user.firstName || 'You';
-    meEntry.handle = '@' + (meEntry.name).replace(/\s+/g, '.').toLowerCase();
+  const { entries, weekStart, nextWeekStart } = _buildLeaderboardRows();
+  const userId = window.__clerkUser?.id || null;
+
+  if (weekNote) {
+    const a = weekStart.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+    const b = new Date(nextWeekStart.getTime() - 1).toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+    weekNote.textContent = `Weekly rankings (${a} - ${b}) · Auto reset every Sunday · Verified via Clerk JWT`;
   }
 
-  lbData.forEach(u => {
+  if (entries.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="4" style="padding:18px 12px;color:var(--muted);font-family:DM Mono,monospace;">No Clerk weekly run data yet. Complete a run to appear on the leaderboard.</td>
+      </tr>
+    `;
+    if (posNote) posNote.textContent = userId
+      ? 'You have no qualifying run data this week yet.'
+      : 'Sign in with Clerk to track your weekly rank.';
+    return;
+  }
+
+  body.innerHTML = '';
+  entries.forEach(u => {
+    const me = userId && u.userId === userId;
     const medal = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : u.rank;
     const rankCls = u.rank <= 3 ? `rank-${u.rank}` : '';
-    const streak = u.streak >= 7
+    const streakHtml = u.streak >= 1
       ? `<span class="badge fire">🔥 ${u.streak}d</span>`
-      : `<span class="badge">${u.streak}d</span>`;
+      : '<span class="badge">0d</span>';
 
     body.innerHTML += `
-      <tr class="${u.me ? 'me' : ''} ${rankCls}">
+      <tr class="${me ? 'me' : ''} ${rankCls}">
         <td><span class="rank-num">${medal}</span></td>
         <td>
           <div class="lb-user">
             <div class="lb-avatar" style="background:${u.col}22;border:1px solid ${u.col}44;color:${u.col}">
-              ${u.name[0]}
+              ${(u.name[0] || 'R').toUpperCase()}
             </div>
             <div>
               <div style="font-weight:500">
                 ${u.name}
-                ${u.me ? '<span style="font-size:0.68rem;color:var(--red)">(you)</span>' : ''}
+                ${me ? '<span style="font-size:0.68rem;color:var(--red)">(you)</span>' : ''}
               </div>
               <div style="font-family:DM Mono,monospace;font-size:0.65rem;color:var(--muted)">${u.handle}</div>
             </div>
           </div>
         </td>
-        <td><span style="font-family:Syne,sans-serif;font-weight:700">${u.dist}</span> <span style="color:var(--muted);font-size:0.78rem">km</span></td>
-        <td>${streak}</td>
+        <td><span style="font-family:Syne,sans-serif;font-weight:700">${u.dist.toFixed(2)}</span> <span style="color:var(--muted);font-size:0.78rem">km</span></td>
+        <td>${streakHtml}</td>
       </tr>`;
   });
+
+  if (posNote) {
+    if (!userId) {
+      posNote.textContent = 'Sign in with Clerk to see your position.';
+    } else {
+      const myRow = entries.find(e => e.userId === userId);
+      posNote.textContent = myRow
+        ? `You are in position #${myRow.rank} out of ${entries.length} runners this week.`
+        : `You are not ranked yet this week. Complete at least one run to join ${entries.length} runners.`;
+    }
+  }
 }
 
-renderLeaderboard();
+window.renderLeaderboard = renderLeaderboard;
+window.addEventListener('DOMContentLoaded', renderLeaderboard);
+window.addEventListener('storage', (evt) => {
+  if (evt.key === RUN_HISTORY_KEY) renderLeaderboard();
+});

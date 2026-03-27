@@ -367,15 +367,16 @@
   <div class="page" id="page-leaderboard">
     <div style="padding:32px 28px">
       <div class="page-title">Leaderboard</div>
-      <div class="page-sub">Weekly rankings · Resets every Monday · Verified via Clerk JWT</div>
+      <div class="page-sub" id="lb-week-note">Weekly rankings · Resets every Sunday</div>
       <div class="lb-tabs">
         <button class="lb-tab active"
           onclick="this.closest('.lb-tabs').querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">🌍
           Global</button>
-        <button class="lb-tab"
+        <!-- <button class="lb-tab"
           onclick="this.closest('.lb-tabs').querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">👥
-          Friends</button>
+          Friends</button> -->
       </div>
+      <div class="page-sub" id="lb-position-note" style="margin-bottom:14px">Sign in to view your weekly rank.</div>
       <div class="card" style="padding:0">
         <table class="lb-table">
           <thead>
@@ -405,7 +406,7 @@
         <div class="profile-info">
           <h2 id="profile-name">—</h2>
           <div class="handle" id="profile-handle">Sign in to view your profile</div>
-          <div class="clerk-verified" id="profile-clerk-id">✓ Powered by Clerk</div>
+          <!-- <div class="clerk-verified" id="profile-clerk-id">by Clerk✓  </div> -->
         </div>
       </div>
 
@@ -413,40 +414,40 @@
         <div class="level-row">
           <div>
             <div class="level-label">Level</div>
-            <div class="level-val">LVL '2' </div>
+            <div class="level-val" id="profile-level">LVL '1'</div>
           </div>
           <div style="text-align:right">
             <div class="level-label">XP</div>
-            <div style="font-family:'DM Mono',monospace;font-size:0.82rem">2,340 / 3,000 XP</div>
+            <div style="font-family:'DM Mono',monospace;font-size:0.82rem" id="profile-xp-text">0 / 100 XP</div>
           </div>
         </div>
         <div class="xp-bar">
-          <div class="xp-fill"></div>
+          <div class="xp-fill" id="profile-xp-fill" style="width:0%"></div>
         </div>
       </div>
 
       <div class="stats-grid" style="margin-bottom:24px">
         <div class="stat-card highlight">
           <div class="s-label">Total Distance</div>
-          <div class="s-value">71<span class="s-unit">km</span></div>
+          <div class="s-value" id="profile-total-distance">0<span class="s-unit">km</span></div>
         </div>
         <div class="stat-card">
           <div class="s-label">Total Runs</div>
-          <div class="s-value">34</div>
+          <div class="s-value" id="profile-total-runs">0</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Best Streak</div>
-          <div class="s-value">🔥 14<span class="s-unit">days</span></div>
+          <div class="s-value" id="profile-best-streak">🔥 0<span class="s-unit">days</span></div>
         </div>
         <div class="stat-card">
           <div class="s-label">Best Pace</div>
-          <div class="s-value">4:52<span class="s-unit">/km</span></div>
+          <div class="s-value" id="profile-best-pace">--:--<span class="s-unit">/km</span></div>
         </div>
       </div>
 
       <div class="card-title" style="margin-bottom:14px">Achievements</div>
-      <div class="badges-grid">
-        <div class="achievement">
+      <div class="badges-grid" id="profile-achievements-grid">
+        <div class="achievement first-run-achievement">
           <div class="ach-icon">🥇</div>
           <div>
             <div class="ach-name">First Run</div>
@@ -511,6 +512,7 @@
   <script src="js/auth.js?v=2" defer></script>
   <script src="js/leaderboard.js" defer></script>
   <script src="js/run.js" defer></script>
+  <script src="js/profile.js" defer></script>
   <script src="js/chatbot.js" defer></script>
 
   <script>

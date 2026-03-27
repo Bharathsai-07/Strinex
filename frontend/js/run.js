@@ -453,6 +453,12 @@ function _saveRunToHistory(runData) {
     localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
     renderRunHistory();
     updateDashboardStats();
+    if (typeof renderLeaderboard === 'function') {
+        renderLeaderboard();
+    }
+    if (typeof updateProfileStats === 'function') {
+        updateProfileStats();
+    }
 }
 
 function renderRunHistory() {
@@ -512,6 +518,12 @@ function clearRunHistory() {
     localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(remaining));
     renderRunHistory();
     updateDashboardStats();
+    if (typeof renderLeaderboard === 'function') {
+        renderLeaderboard();
+    }
+    if (typeof updateProfileStats === 'function') {
+        updateProfileStats();
+    }
     if (typeof toast === 'function') toast('Run history cleared', 'info');
 }
 
@@ -522,6 +534,12 @@ function deleteRun(runId) {
     localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
     renderRunHistory();
     updateDashboardStats();
+    if (typeof renderLeaderboard === 'function') {
+        renderLeaderboard();
+    }
+    if (typeof updateProfileStats === 'function') {
+        updateProfileStats();
+    }
 }
 
 function _runTimestampMs(run) {
@@ -576,6 +594,26 @@ function _relativeDateLabel(ms) {
     if (diffDays < 7) return `${diffDays} days ago`;
 
     return date.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+}
+
+function _calculateCurrentStreak(dayDistanceMap, minDailyKm = 1) {
+    let streak = 0;
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+
+    while (true) {
+        const key = _dateKeyLocal(cursor.getTime());
+        if ((dayDistanceMap[key] || 0) >= minDailyKm) {
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+            continue;
+        }
+
+        // Any missed day below minDailyKm breaks streak immediately.
+        break;
+    }
+
+    return streak;
 }
 
 function updateDashboardStats() {
@@ -659,18 +697,7 @@ function updateDashboardStats() {
         dayDistanceMap[key] = (dayDistanceMap[key] || 0) + run.dist;
     });
 
-    let streak = 0;
-    const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
-    while (true) {
-        const key = _dateKeyLocal(cursor.getTime());
-        if ((dayDistanceMap[key] || 0) >= 1) {
-            streak += 1;
-            cursor.setDate(cursor.getDate() - 1);
-            continue;
-        }
-        break;
-    }
+    const streak = _calculateCurrentStreak(dayDistanceMap, 1);
 
     const todayKm = dayDistanceMap[_dateKeyLocal(now.getTime())] || 0;
     const kmAway = Math.max(0, 1 - todayKm);
