@@ -12,6 +12,7 @@
 
 window.__clerkUser = null;
 let _clerkInstance = null;
+let _accountMenuBound = false;
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ function _onSignedIn(user) {
 
     pill.style.display = 'none';
     ubtn.style.display = 'flex';
+    _bindAccountMenu();
 
     // Hide Home, show protected links
     const homeBtn = document.getElementById('nav-home');
@@ -134,18 +136,7 @@ function _onSignedIn(user) {
         showPage('dashboard');
     }
 
-    if (window.Clerk) {
-        window.Clerk.mountUserButton(ubtn, {
-            appearance: {
-                elements: {
-                    userButtonAvatarBox: "width: 26px; height: 26px;"
-                },
-                layout: { showOptionalName: true }
-            }
-        });
-    } else {
-        ubtn.innerHTML = `<div class="clerk-pill"><div class="avatar"><img src="${user.imageUrl || 'https://ui-avatars.com/api/?name=Demo&background=ff4b4b&color=fff'}" style="width:100%;height:100%;border-radius:50%"></div><div class="clerk-name">${name}</div></div>`;
-    }
+    _renderUserButton(user, name, ubtn);
 
     // Profile page
     const pAvatar = document.getElementById('profile-avatar-text');
@@ -162,21 +153,31 @@ function _onSignedIn(user) {
     const sub = document.getElementById('dash-sub');
     if (sub) sub.textContent = `Welcome back, ${name.split(' ')[0]} · Strinex`;
 
+    if (typeof updateDashboardStats === 'function') {
+        updateDashboardStats();
+    }
+
     toast(`Welcome back, ${name.split(' ')[0]}! 👋`, 'success');
 }
 
 function _onSignedOut() {
     window.__clerkUser = null;
     _setNavSignedOut();
+    if (typeof updateDashboardStats === 'function') {
+        updateDashboardStats();
+    }
     showPage('landing');
 }
 
 function _setNavSignedOut() {
     const pill = document.getElementById('nav-pill');
     const ubtn = document.getElementById('clerk-user-btn');
+    _closeAccountMenu();
     if (pill) pill.style.display = 'flex';
-    if (ubtn) ubtn.style.display = 'none';
-    if (ubtn && window.Clerk) window.Clerk.unmountUserButton(ubtn);
+    if (ubtn) {
+        ubtn.style.display = 'none';
+        ubtn.innerHTML = '';
+    }
 
     // Show Home, hide protected links
     const homeBtn = document.getElementById('nav-home');
@@ -198,4 +199,58 @@ function _setNavSignedOut() {
 function _hideLoading() {
     const el = document.getElementById('clerk-loading');
     if (el) el.style.display = 'none';
+}
+
+function _renderUserButton(user, name, mountEl) {
+    const fallbackHtml = `<div class="clerk-pill"><div class="avatar"><img src="${user.imageUrl || 'https://ui-avatars.com/api/?name=Demo&background=ff4b4b&color=fff'}" style="width:100%;height:100%;border-radius:50%"></div><div class="clerk-name">${name}</div></div>`;
+
+    if (!mountEl) return;
+    mountEl.innerHTML = fallbackHtml;
+}
+
+function _bindAccountMenu() {
+    if (_accountMenuBound) return;
+
+    const userBtn = document.getElementById('clerk-user-btn');
+    const menu = document.getElementById('account-menu');
+    const profileBtn = document.getElementById('account-profile');
+    const signOutBtn = document.getElementById('account-signout');
+
+    if (!userBtn || !menu || !profileBtn || !signOutBtn) return;
+
+    userBtn.addEventListener('click', (evt) => {
+        evt.stopPropagation();
+        menu.classList.toggle('open');
+        menu.setAttribute('aria-hidden', menu.classList.contains('open') ? 'false' : 'true');
+    });
+
+    profileBtn.addEventListener('click', () => {
+        _closeAccountMenu();
+        showPage('profile');
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+        _closeAccountMenu();
+        await signOut();
+    });
+
+    document.addEventListener('click', (evt) => {
+        if (!menu.classList.contains('open')) return;
+        if (!menu.contains(evt.target) && !userBtn.contains(evt.target)) {
+            _closeAccountMenu();
+        }
+    });
+
+    document.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Escape') _closeAccountMenu();
+    });
+
+    _accountMenuBound = true;
+}
+
+function _closeAccountMenu() {
+    const menu = document.getElementById('account-menu');
+    if (!menu) return;
+    menu.classList.remove('open');
+    menu.setAttribute('aria-hidden', 'true');
 }

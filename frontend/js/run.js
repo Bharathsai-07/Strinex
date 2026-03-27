@@ -17,6 +17,8 @@ let watchId = null;
 
 /** Default map center coordinates */
 const DEFAULT_POS = [20.5937, 78.9629]; // Centre of India
+const RUN_HISTORY_KEY = 'strinex_run_history';
+const RUN_META_KEY = 'strinex_run_meta';
 
 // ── Map initialisation ───────────────────────────────────────────────────────
 
@@ -106,6 +108,8 @@ function startRun() {
     elapsed = 0;
     routeCoords = [];
     polyline.setLatLngs([]);
+    _incrementRunStarts();
+    updateDashboardStats();
 
     _setGpsStatus('searching', 'Acquiring GPS signal...');
     _setRunBtn('STOP RUN', 'run-ctrl-btn stop');
@@ -236,6 +240,8 @@ function stopRun() {
                 pace: `${paceStr} min/km`,
                 calories: dist > 0 ? `${Math.round(dist * 70)} kcal` : null,
                 timestamp: tsEl ? tsEl.textContent : new Date().toLocaleString(),
+                endedAtIso: new Date().toISOString(),
+                endedAtMs: Date.now(),
                 gpsPoints: routeCoords.length,
             });
         }
@@ -386,9 +392,38 @@ function _maybeShowSecureContextWarning() {
     }
 }
 
-// ── Run History (localStorage) ───────────────────────────────────────
+// ── Run History + Dashboard Analytics (localStorage) ─────────────────
 
-const RUN_HISTORY_KEY = 'strinex_run_history';
+function _getActiveUserId() {
+    return window.__clerkUser?.id || 'guest';
+}
+
+function _getRunMeta() {
+    try {
+        return JSON.parse(localStorage.getItem(RUN_META_KEY) || '{}');
+    } catch {
+        return {};
+    }
+}
+
+function _setRunMeta(meta) {
+    localStorage.setItem(RUN_META_KEY, JSON.stringify(meta));
+}
+
+function _incrementRunStarts() {
+    const meta = _getRunMeta();
+    const userId = _getActiveUserId();
+    const current = meta[userId] || { startsCount: 0 };
+    current.startsCount = (current.startsCount || 0) + 1;
+    meta[userId] = current;
+    _setRunMeta(meta);
+}
+
+function _getRunStartsCount() {
+    const meta = _getRunMeta();
+    const userId = _getActiveUserId();
+    return meta[userId]?.startsCount || 0;
+}
 
 function _getRunHistory() {
     try {
@@ -396,13 +431,28 @@ function _getRunHistory() {
     } catch { return []; }
 }
 
+function _getCurrentUserRunHistory() {
+    const userId = _getActiveUserId();
+    return _getRunHistory().filter(run => !run.userId || run.userId === userId);
+}
+
 function _saveRunToHistory(runData) {
     const history = _getRunHistory();
-    history.unshift(runData); // newest first
+    const user = window.__clerkUser;
+    const normalized = {
+        ...runData,
+        userId: user?.id || 'guest',
+        userName: user?.fullName || user?.firstName || 'Runner',
+        endedAtMs: runData.endedAtMs || runData.id || Date.now(),
+        endedAtIso: runData.endedAtIso || new Date(runData.endedAtMs || Date.now()).toISOString(),
+    };
+
+    history.unshift(normalized); // newest first
     // Keep max 50 runs
     if (history.length > 50) history.length = 50;
     localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
     renderRunHistory();
+    updateDashboardStats();
 }
 
 function renderRunHistory() {
@@ -411,7 +461,7 @@ function renderRunHistory() {
     const clearBtn = document.getElementById('clear-history-btn');
     if (!container) return;
 
-    const history = _getRunHistory();
+    const history = _getCurrentUserRunHistory();
 
     // Toggle empty state
     if (emptyEl) emptyEl.style.display = history.length === 0 ? 'flex' : 'none';
@@ -457,14 +507,209 @@ function renderRunHistory() {
 
 function clearRunHistory() {
     if (!confirm('Clear all run history?')) return;
-    localStorage.removeItem(RUN_HISTORY_KEY);
+    const userId = _getActiveUserId();
+    const remaining = _getRunHistory().filter(run => run.userId && run.userId !== userId);
+    localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(remaining));
     renderRunHistory();
+    updateDashboardStats();
     if (typeof toast === 'function') toast('Run history cleared', 'info');
 }
 
 function deleteRun(runId) {
     let history = _getRunHistory();
-    history = history.filter(r => r.id !== runId);
+    const userId = _getActiveUserId();
+    history = history.filter(r => !(r.id === runId && (!r.userId || r.userId === userId)));
     localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history));
     renderRunHistory();
+    updateDashboardStats();
 }
+
+function _runTimestampMs(run) {
+    if (typeof run.endedAtMs === 'number' && Number.isFinite(run.endedAtMs)) return run.endedAtMs;
+    if (typeof run.id === 'number' && Number.isFinite(run.id)) return run.id;
+    const parsed = Date.parse(run.endedAtIso || run.timestamp || '');
+    return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function _runDistanceKm(run) {
+    if (typeof run.distanceRaw === 'number' && Number.isFinite(run.distanceRaw)) return run.distanceRaw;
+    const parsed = parseFloat(String(run.distance || '').replace(/[^\d.]/g, ''));
+    return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function _runDurationSec(run) {
+    if (typeof run.durationRaw === 'number' && Number.isFinite(run.durationRaw)) return run.durationRaw;
+    const m = String(run.duration || '').match(/^(\d+):(\d{2})$/);
+    if (!m) return 0;
+    return (parseInt(m[1], 10) * 60) + parseInt(m[2], 10);
+}
+
+function _startOfWeekSunday(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay());
+    return d;
+}
+
+function _dateKeyLocal(ms) {
+    const d = new Date(ms);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function _formatPaceFromSecondsPerKm(secPerKm) {
+    if (!Number.isFinite(secPerKm) || secPerKm <= 0) return '--:--';
+    const m = Math.floor(secPerKm / 60);
+    const s = Math.round(secPerKm % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function _relativeDateLabel(ms) {
+    const date = new Date(ms);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(date);
+    target.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today.getTime() - target.getTime()) / 86400000);
+
+    if (diffDays <= 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+
+    return date.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+}
+
+function updateDashboardStats() {
+    const weekKmEl = document.getElementById('dash-week-km');
+    const weekDeltaEl = document.getElementById('dash-week-delta');
+    const streakDaysEl = document.getElementById('dash-streak-days');
+    const streakGoalEl = document.getElementById('dash-streak-goal');
+    const avgPaceEl = document.getElementById('dash-avg-pace');
+    const avgPaceNoteEl = document.getElementById('dash-avg-pace-note');
+    const totalRunsEl = document.getElementById('dash-total-runs');
+    const totalRunsNoteEl = document.getElementById('dash-total-runs-note');
+    const weekBarsEl = document.getElementById('dash-week-bars');
+    const recentRunsEl = document.getElementById('dash-recent-runs');
+
+    if (!weekKmEl || !weekDeltaEl || !streakDaysEl || !streakGoalEl || !avgPaceEl || !avgPaceNoteEl || !totalRunsEl || !totalRunsNoteEl || !weekBarsEl || !recentRunsEl) {
+        return;
+    }
+
+    const runs = _getCurrentUserRunHistory()
+        .map(run => ({
+            ...run,
+            ts: _runTimestampMs(run),
+            dist: _runDistanceKm(run),
+            durationSec: _runDurationSec(run),
+        }))
+        .filter(run => run.ts > 0)
+        .sort((a, b) => b.ts - a.ts);
+
+    const now = new Date();
+    const weekStart = _startOfWeekSunday(now);
+    const nextSunday = new Date(weekStart);
+    nextSunday.setDate(nextSunday.getDate() + 7);
+
+    const prevWeekStart = new Date(weekStart);
+    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+
+    const weekRuns = runs.filter(run => run.ts >= weekStart.getTime() && run.ts < nextSunday.getTime());
+    const prevWeekRuns = runs.filter(run => run.ts >= prevWeekStart.getTime() && run.ts < weekStart.getTime());
+
+    const weekDistance = weekRuns.reduce((sum, run) => sum + run.dist, 0);
+    const prevWeekDistance = prevWeekRuns.reduce((sum, run) => sum + run.dist, 0);
+    const weekDuration = weekRuns.reduce((sum, run) => sum + run.durationSec, 0);
+    const weeklyAvgPace = weekDistance > 0 ? (weekDuration / weekDistance) : 0;
+
+    weekKmEl.innerHTML = `${weekDistance.toFixed(2)}<span class="s-unit">km</span>`;
+    const weekDelta = weekDistance - prevWeekDistance;
+    if (prevWeekDistance > 0) {
+        weekDeltaEl.textContent = `${weekDelta >= 0 ? '↑' : '↓'} ${weekDelta >= 0 ? '+' : ''}${weekDelta.toFixed(2)}km vs last week`;
+    } else {
+        weekDeltaEl.textContent = weekDistance > 0 ? 'First active week in your data' : 'No runs yet this week';
+    }
+
+    avgPaceEl.innerHTML = `${_formatPaceFromSecondsPerKm(weeklyAvgPace)}<span class="s-unit">/km</span>`;
+    avgPaceNoteEl.textContent = weekRuns.length > 0
+        ? `Based on ${weekRuns.length} run${weekRuns.length === 1 ? '' : 's'} this week`
+        : 'Run this week to calculate average pace';
+
+    const dayTotals = Array.from({ length: 7 }, () => 0);
+    weekRuns.forEach(run => {
+        const d = new Date(run.ts);
+        const idx = d.getDay();
+        dayTotals[idx] += run.dist;
+    });
+
+    const maxDayKm = Math.max(...dayTotals, 0.1);
+    weekBarsEl.innerHTML = dayTotals.map((km, idx) => {
+        const h = Math.max(5, (km / maxDayKm) * 100);
+        const todayCls = idx === now.getDay() ? ' today' : '';
+        const labels = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        return `
+            <div class="bar-wrap">
+              <div class="bar${todayCls}" style="height:${h.toFixed(1)}%" title="${km.toFixed(2)} km"></div>
+              <div class="bar-day">${labels[idx]}</div>
+            </div>
+        `;
+    }).join('');
+
+    const dayDistanceMap = {};
+    runs.forEach(run => {
+        const key = _dateKeyLocal(run.ts);
+        dayDistanceMap[key] = (dayDistanceMap[key] || 0) + run.dist;
+    });
+
+    let streak = 0;
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    while (true) {
+        const key = _dateKeyLocal(cursor.getTime());
+        if ((dayDistanceMap[key] || 0) >= 1) {
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+            continue;
+        }
+        break;
+    }
+
+    const todayKm = dayDistanceMap[_dateKeyLocal(now.getTime())] || 0;
+    const kmAway = Math.max(0, 1 - todayKm);
+    streakDaysEl.innerHTML = `🔥 ${streak}<span class="s-unit">days</span>`;
+    streakGoalEl.textContent = kmAway > 0
+        ? `You are ${kmAway.toFixed(2)} km away to get the streak today`
+        : 'Streak goal complete today (1.00 km reached)';
+
+    const totalRuns = Math.max(_getRunStartsCount(), runs.length);
+    totalRunsEl.textContent = String(totalRuns);
+    totalRunsNoteEl.textContent = totalRuns > 0 ? 'Based on started run sessions' : 'Start a run to begin tracking totals';
+
+    const recent = runs.slice(0, 4);
+    if (recent.length === 0) {
+        recentRunsEl.innerHTML = `
+            <li class="run-item">
+              <div>
+                <div class="ri-dist">No runs yet</div>
+                <div class="ri-date">Start your first tracked run</div>
+              </div>
+              <div class="run-pace">--:--/km</div>
+            </li>
+        `;
+    } else {
+        recentRunsEl.innerHTML = recent.map((run) => {
+            const pace = run.dist > 0 ? _formatPaceFromSecondsPerKm(run.durationSec / run.dist) : '--:--';
+            return `
+                <li class="run-item">
+                  <div>
+                    <div class="ri-dist">${run.dist.toFixed(2)} km</div>
+                    <div class="ri-date">${_relativeDateLabel(run.ts)} · ${fmt(run.durationSec)}</div>
+                  </div>
+                  <div class="run-pace">${pace}/km</div>
+                </li>
+            `;
+        }).join('');
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    updateDashboardStats();
+});

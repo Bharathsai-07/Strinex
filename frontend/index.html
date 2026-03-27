@@ -29,6 +29,18 @@
   <link rel="stylesheet" href="css/leaderboard.css" />
   <link rel="stylesheet" href="css/profile.css" />
 
+  <!-- Content Security Policy: Explicitly allow Clerk, Leaflet, Google Fonts, and AI API -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://*.clerk.accounts.dev;
+    worker-src 'self' blob:;
+    connect-src 'self' https://*.clerk.accounts.dev https://generativelanguage.googleapis.com https://*.maptiler.com;
+    img-src 'self' data: blob: https://*.clerk.com https://img.clerk.com https://ui-avatars.com https://*.tile.openstreetmap.org https://*.maptiler.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
+    font-src 'self' https://fonts.gstatic.com;
+    frame-src 'self' https://*.clerk.accounts.dev;
+  ">
+
   <!-- Clerk CDN is injected dynamically by auth.js ONLY when a valid key exists -->
 </head>
 
@@ -74,6 +86,11 @@
 
     <!-- Clerk user pill — updates dynamically when signed in/out -->
     <div id="clerk-user-btn" style="display:none;"></div>
+
+    <div id="account-menu" class="account-menu" aria-hidden="true">
+      <button id="account-profile" class="account-menu-item" type="button">Profile</button>
+      <button id="account-signout" class="account-menu-item danger" type="button">Sign Out</button>
+    </div>
 
     <div class="clerk-pill signed-out" id="nav-pill" onclick="openAuth('login')">
       <div class="avatar" id="nav-avatar">?</div>
@@ -146,90 +163,69 @@
       <div class="stats-grid">
         <div class="stat-card highlight">
           <div class="s-label">This Week</div>
-          <div class="s-value">14<span class="s-unit">km</span></div>
-          <div class="s-delta">↑ +1.8km from last week</div>
+          <div class="s-value" id="dash-week-km">0.00<span class="s-unit">km</span></div>
+          <div class="s-delta" id="dash-week-delta">No runs yet this week</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Current Streak</div>
-          <div class="s-value">🔥 7<span class="s-unit">days</span></div>
-          <div class="s-delta" style="color:var(--amber)">Goal: 2 km/day</div>
+          <div class="s-value" id="dash-streak-days">🔥 0<span class="s-unit">days</span></div>
+          <div class="s-delta" id="dash-streak-goal" style="color:var(--amber)">You are 1.00 km away to get the streak today</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Avg Pace</div>
-          <div class="s-value">5:42<span class="s-unit">/km</span></div>
-          <div class="s-delta">↓ −0:18 improvement</div>
+          <div class="s-value" id="dash-avg-pace">--:--<span class="s-unit">/km</span></div>
+          <div class="s-delta" id="dash-avg-pace-note">Weekly average pace from tracked runs</div>
         </div>
         <div class="stat-card">
           <div class="s-label">Total Runs</div>
-          <div class="s-value">18</div>
-          <div class="s-delta" style="color:var(--muted)">Since Jan 2025</div>
+          <div class="s-value" id="dash-total-runs">0</div>
+          <div class="s-delta" id="dash-total-runs-note" style="color:var(--muted)">Starts counting from your run sessions</div>
         </div>
       </div>
 
       <div class="dash-row">
         <div class="card">
           <div class="card-title">Weekly Distance <span>km per day</span></div>
-          <div class="week-bars">
+          <div class="week-bars" id="dash-week-bars">
             <div class="bar-wrap">
-              <div class="bar" style="height:38%"></div>
+              <div class="bar" style="height:5%"></div>
+              <div class="bar-day">SUN</div>
+            </div>
+            <div class="bar-wrap">
+              <div class="bar" style="height:5%"></div>
               <div class="bar-day">MON</div>
             </div>
             <div class="bar-wrap">
-              <div class="bar" style="height:65%"></div>
+              <div class="bar" style="height:5%"></div>
               <div class="bar-day">TUE</div>
             </div>
             <div class="bar-wrap">
-              <div class="bar" style="height:52%"></div>
+              <div class="bar" style="height:5%"></div>
               <div class="bar-day">WED</div>
             </div>
             <div class="bar-wrap">
-              <div class="bar" style="height:80%"></div>
+              <div class="bar" style="height:5%"></div>
               <div class="bar-day">THU</div>
             </div>
             <div class="bar-wrap">
-              <div class="bar today" style="height:45%"></div>
+              <div class="bar" style="height:5%"></div>
               <div class="bar-day">FRI</div>
             </div>
             <div class="bar-wrap">
               <div class="bar" style="height:5%"></div>
               <div class="bar-day">SAT</div>
             </div>
-            <div class="bar-wrap">
-              <div class="bar" style="height:5%"></div>
-              <div class="bar-day">SUN</div>
-            </div>
           </div>
         </div>
         <div class="card">
           <div class="card-title">Recent Runs</div>
-          <ul class="run-list">
+          <ul class="run-list" id="dash-recent-runs">
             <li class="run-item">
               <div>
-                <div class="ri-dist">2.5 km</div>
-                <div class="ri-date">Today · 47:22</div>
+                <div class="ri-dist">No runs yet</div>
+                <div class="ri-date">Start your first tracked run</div>
               </div>
-              <div class="run-pace">5:38/km</div>
-            </li>
-            <li class="run-item">
-              <div>
-                <div class="ri-dist">2.1 km</div>
-                <div class="ri-date">Yesterday · 29:44</div>
-              </div>
-              <div class="run-pace">5:50/km</div>
-            </li>
-            <li class="run-item">
-              <div>
-                <div class="ri-dist">2.3 km</div>
-                <div class="ri-date">2 days ago · 56:10</div>
-              </div>
-              <div class="run-pace">5:37/km</div>
-            </li>
-            <li class="run-item">
-              <div>
-                <div class="ri-dist">2.6 km</div>
-                <div class="ri-date">3 days ago · 39:02</div>
-              </div>
-              <div class="run-pace">5:44/km</div>
+              <div class="run-pace">--:--/km</div>
             </li>
           </ul>
         </div>

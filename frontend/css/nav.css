@@ -102,6 +102,57 @@ nav {
     color: var(--muted);
 }
 
+#clerk-user-btn {
+    cursor: pointer;
+}
+
+.account-menu {
+    position: absolute;
+    top: 54px;
+    right: 24px;
+    width: 170px;
+    background: rgba(14, 14, 17, 0.98);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10001;
+}
+
+.account-menu.open {
+    display: flex;
+}
+
+.account-menu-item {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    width: 100%;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+
+.account-menu-item:hover {
+    background: var(--surface2);
+}
+
+.account-menu-item.danger {
+    color: #ff8b8b;
+}
+
+.account-menu-item.danger:hover {
+    color: #ffdada;
+    background: rgba(255, 75, 75, 0.14);
+}
+
 /* ── HAMBURGER MENU ─────────────────────────────────────────────────── */
 .hamburger {
     display: none;
@@ -201,5 +252,9 @@ nav {
 
     .clerk-pill {
         padding: 5px 8px;
+    }
+
+    .account-menu {
+        right: 14px;
     }
 }
