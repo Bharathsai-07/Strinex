@@ -5,6 +5,10 @@
 
 const LEADERBOARD_RUN_HISTORY_KEY = 'strinex_run_history';
 
+function _leaderboardHandleFromName(name) {
+  return '@' + String(name || 'runner').replace(/\s+/g, '.').toLowerCase();
+}
+
 function _getAllRuns() {
   try {
     return JSON.parse(localStorage.getItem(LEADERBOARD_RUN_HISTORY_KEY) || '[]');
@@ -112,16 +116,48 @@ function _buildLeaderboardRows() {
   };
 }
 
-function renderLeaderboard() {
+async function _getLeaderboardEntries() {
+  if (window.__clerkUser && typeof loadLeaderboardRows === 'function') {
+    try {
+      const rows = await loadLeaderboardRows('weekly');
+      if (Array.isArray(rows)) {
+        return rows.map((row) => ({
+          rank: row.rank,
+          userId: row.userId,
+          name: row.userName || 'Runner',
+          handle: _leaderboardHandleFromName(row.userName || 'Runner'),
+          dist: row.distance || 0,
+          streak: row.currentStreak || 0,
+          col: _stableColor(row.userId),
+        }));
+      }
+    } catch (error) {
+      console.warn('[leaderboard] Falling back to local leaderboard cache:', error);
+    }
+  }
+
+  return _buildLeaderboardRows().entries.map((row) => ({
+    ...row,
+    name: row.name || 'Runner',
+    handle: row.handle || _leaderboardHandleFromName(row.name || 'Runner'),
+    streak: row.streak || 0,
+  }));
+}
+
+async function renderLeaderboard() {
   const body = document.getElementById('lb-body');
   const weekNote = document.getElementById('lb-week-note');
   const posNote = document.getElementById('lb-position-note');
   if (!body) return;
 
-  const { entries, weekStart, nextWeekStart } = _buildLeaderboardRows();
+  const entries = await _getLeaderboardEntries();
   const userId = window.__clerkUser?.id || null;
 
   if (weekNote) {
+    const now = new Date();
+    const weekStart = _weekStartSunday(now);
+    const nextWeekStart = new Date(weekStart);
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
     const a = weekStart.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
     const b = new Date(nextWeekStart.getTime() - 1).toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
     weekNote.textContent = `Weekly rankings (${a} - ${b}) · Auto reset every Sunday · Verified via Clerk JWT`;

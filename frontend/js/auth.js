@@ -162,6 +162,9 @@ function _onSignedIn(user) {
     if (typeof updateProfileStats === 'function') {
         updateProfileStats();
     }
+    if (typeof renderRunHistory === 'function') {
+        renderRunHistory();
+    }
 
     toast(`Welcome back, ${name.split(' ')[0]}! 👋`, 'success');
 }

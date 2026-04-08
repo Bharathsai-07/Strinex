@@ -5,11 +5,28 @@
 
 const PROFILE_RUN_HISTORY_KEY = 'strinex_run_history';
 
-function _getAllUserRuns() {
+function _isProfileRunOwnedByUser(run, userId) {
+    if (!run || typeof run !== 'object') return false;
+    if (run.userId) return run.userId === userId;
+    return userId === 'guest';
+}
+
+async function _getAllUserRuns() {
+    if (window.__clerkUser && typeof loadCurrentUserRuns === 'function') {
+        try {
+            const backendRuns = await loadCurrentUserRuns();
+            if (Array.isArray(backendRuns)) {
+                return backendRuns;
+            }
+        } catch (error) {
+            console.warn('[profile] Falling back to local cache:', error);
+        }
+    }
+
     try {
         const all = JSON.parse(localStorage.getItem(PROFILE_RUN_HISTORY_KEY) || '[]');
         const userId = window.__clerkUser?.id || 'guest';
-        return all.filter(run => !run.userId || run.userId === userId);
+        return all.filter(run => _isProfileRunOwnedByUser(run, userId));
     } catch {
         return [];
     }
@@ -184,8 +201,8 @@ function _getAchievements() {
 /**
  * Compute all profile stats from run history
  */
-function _computeProfileStats() {
-    const runs = _getAllUserRuns()
+async function _computeProfileStats() {
+    const runs = (await _getAllUserRuns())
         .map(run => ({
             ...run,
             ts: _runTimestampMs(run),
@@ -249,7 +266,7 @@ function _computeProfileStats() {
     };
 }
 
-function updateProfileStats() {
+async function updateProfileStats() {
     const levelEl = document.getElementById('profile-level');
     const xpTextEl = document.getElementById('profile-xp-text');
     const xpFillEl = document.getElementById('profile-xp-fill');
@@ -272,7 +289,7 @@ function updateProfileStats() {
         return;
     }
 
-    const stats = _computeProfileStats();
+    const stats = await _computeProfileStats();
     const { levelInfo } = stats;
 
     if (levelEl) levelEl.textContent = `LVL '${levelInfo.level}'`;

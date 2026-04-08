@@ -265,11 +265,13 @@ function stopRun() {
                 duration: durationStr,
                 durationRaw: elapsed,
                 pace: `${paceStr} min/km`,
+                paceRaw: pacePerKm,
                 calories: dist > 0 ? `${Math.round(dist * 70)} kcal` : null,
                 timestamp: tsEl ? tsEl.textContent : new Date().toLocaleString(),
                 endedAtIso: new Date().toISOString(),
                 endedAtMs: Date.now(),
                 gpsPoints: routeCoords.length,
+                routeCoordinates: routeCoords,
             });
         }
     }
@@ -446,26 +448,69 @@ function _getRunHistory() {
     } catch { return []; }
 }
 
-function _getCurrentUserRunHistory() {
-    const userId = _getActiveUserId();
-    return _getRunHistory().filter(run => !run.userId || run.userId === userId);
+function _isRunOwnedByUser(run, userId = _getActiveUserId()) {
+    if (!run || typeof run !== 'object') return false;
+    if (run.userId) return run.userId === userId;
+    // Legacy runs without userId belong only to guest mode.
+    return userId === 'guest';
 }
 
-function _saveRunToHistory(runData) {
-    const history = _getRunHistory();
+function _getCurrentUserRunHistory() {
+    return _getRunHistory().filter(run => _isRunOwnedByUser(run));
+}
+
+async function _getCurrentUserRunsForDisplay() {
+    if (window.__clerkUser && typeof loadCurrentUserRuns === 'function') {
+        try {
+            const backendRuns = await loadCurrentUserRuns();
+            if (Array.isArray(backendRuns)) {
+                return backendRuns;
+            }
+        } catch (error) {
+            console.warn('[run.js] Falling back to local run cache:', error);
+        }
+    }
+
+    return _getCurrentUserRunHistory();
+}
+
+async function _saveRunToHistory(runData) {
     const user = window.__clerkUser;
+    const userId = user?.id || 'guest';
     const normalized = {
         ...runData,
-        userId: user?.id || 'guest',
+        userId,
         userName: user?.fullName || user?.firstName || 'Runner',
         endedAtMs: runData.endedAtMs || runData.id || Date.now(),
         endedAtIso: runData.endedAtIso || new Date(runData.endedAtMs || Date.now()).toISOString(),
     };
 
+    try {
+        if (window.__clerkUser && typeof saveUserRun === 'function') {
+            await saveUserRun({
+                    userName: user?.fullName || user?.firstName || 'Runner',
+                    distance: runData.distanceRaw || parseFloat(String(runData.distance || '').replace(/[^\d.]/g, '')) || 0,
+                    duration: runData.durationRaw || 0,
+                    pace: runData.paceRaw || 0,
+                    routeCoordinates: Array.isArray(runData.routeCoordinates)
+                        ? runData.routeCoordinates.map((coord) => ({ lat: coord[0], lng: coord[1] }))
+                        : [],
+                    timestamp: runData.endedAtIso || new Date().toISOString(),
+            });
+        }
+    } catch (error) {
+        console.warn('[run.js] Backend save failed, storing locally:', error);
+    }
+
+    const history = _getRunHistory();
     history.unshift(normalized); // newest first
-    // Keep max 50 runs
-    if (history.length > 50) history.length = 50;
-    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(history));
+    const mine = history.filter(run => _isRunOwnedByUser(run, userId));
+    const others = history.filter(run => !_isRunOwnedByUser(run, userId));
+
+    // Keep max 50 runs per user so one account does not trim another account's history.
+    if (mine.length > 50) mine.length = 50;
+
+    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify([...mine, ...others]));
     renderRunHistory();
     updateDashboardStats();
     if (typeof renderLeaderboard === 'function') {
@@ -476,13 +521,13 @@ function _saveRunToHistory(runData) {
     }
 }
 
-function renderRunHistory() {
+async function renderRunHistory() {
     const container = document.getElementById('run-history-cards');
     const emptyEl = document.getElementById('run-history-empty');
     const clearBtn = document.getElementById('clear-history-btn');
     if (!container) return;
 
-    const history = _getCurrentUserRunHistory();
+    const history = await _getCurrentUserRunsForDisplay();
 
     // Toggle empty state
     if (emptyEl) emptyEl.style.display = history.length === 0 ? 'flex' : 'none';
@@ -528,33 +573,51 @@ function renderRunHistory() {
 
 function clearRunHistory() {
     if (!confirm('Clear all run history?')) return;
-    const userId = _getActiveUserId();
-    const remaining = _getRunHistory().filter(run => run.userId && run.userId !== userId);
-    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(remaining));
-    renderRunHistory();
-    updateDashboardStats();
-    if (typeof renderLeaderboard === 'function') {
-        renderLeaderboard();
-    }
-    if (typeof updateProfileStats === 'function') {
-        updateProfileStats();
-    }
-    if (typeof toast === 'function') toast('Run history cleared', 'info');
+    (async () => {
+        try {
+            if (window.__clerkUser && typeof clearUserRuns === 'function') {
+                await clearUserRuns();
+            }
+        } catch (error) {
+            console.warn('[run.js] Backend clear failed, clearing local cache only:', error);
+        }
+
+        const remaining = _getRunHistory().filter(run => !_isRunOwnedByUser(run));
+        localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(remaining));
+        await renderRunHistory();
+        updateDashboardStats();
+        if (typeof renderLeaderboard === 'function') {
+            renderLeaderboard();
+        }
+        if (typeof updateProfileStats === 'function') {
+            updateProfileStats();
+        }
+        if (typeof toast === 'function') toast('Run history cleared', 'info');
+    })();
 }
 
 function deleteRun(runId) {
-    let history = _getRunHistory();
-    const userId = _getActiveUserId();
-    history = history.filter(r => !(r.id === runId && (!r.userId || r.userId === userId)));
-    localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(history));
-    renderRunHistory();
-    updateDashboardStats();
-    if (typeof renderLeaderboard === 'function') {
-        renderLeaderboard();
-    }
-    if (typeof updateProfileStats === 'function') {
-        updateProfileStats();
-    }
+    (async () => {
+        try {
+            if (window.__clerkUser && typeof deleteUserRun === 'function') {
+                await deleteUserRun(runId);
+            }
+        } catch (error) {
+            console.warn('[run.js] Backend delete failed, deleting local cache only:', error);
+        }
+
+        let history = _getRunHistory();
+        history = history.filter(r => !(String(r.id) === String(runId) && _isRunOwnedByUser(r)));
+        localStorage.setItem(RUN_HISTORY_STORAGE_KEY, JSON.stringify(history));
+        await renderRunHistory();
+        updateDashboardStats();
+        if (typeof renderLeaderboard === 'function') {
+            renderLeaderboard();
+        }
+        if (typeof updateProfileStats === 'function') {
+            updateProfileStats();
+        }
+    })();
 }
 
 function _runTimestampMs(run) {
@@ -631,7 +694,7 @@ function _calculateCurrentStreak(dayDistanceMap, minDailyKm = 1) {
     return streak;
 }
 
-function updateDashboardStats() {
+async function updateDashboardStats() {
     const weekKmEl = document.getElementById('dash-week-km');
     const weekDeltaEl = document.getElementById('dash-week-delta');
     const streakDaysEl = document.getElementById('dash-streak-days');
@@ -647,7 +710,8 @@ function updateDashboardStats() {
         return;
     }
 
-    const runs = _getCurrentUserRunHistory()
+    const sourceRuns = await _getCurrentUserRunsForDisplay();
+    const runs = sourceRuns
         .map(run => ({
             ...run,
             ts: _runTimestampMs(run),
@@ -721,9 +785,12 @@ function updateDashboardStats() {
         ? `You are ${kmAway.toFixed(2)} km away to get the streak today`
         : 'Streak goal complete today (1.00 km reached)';
 
-    const totalRuns = Math.max(_getRunStartsCount(), runs.length);
+    // Keep total runs account-specific by counting only this user's completed runs.
+    const totalRuns = runs.length;
     totalRunsEl.textContent = String(totalRuns);
-    totalRunsNoteEl.textContent = totalRuns > 0 ? 'Based on started run sessions' : 'Start a run to begin tracking totals';
+    totalRunsNoteEl.textContent = totalRuns > 0
+        ? 'Based on your completed runs'
+        : 'Complete a run to begin tracking totals';
 
     const recent = runs.slice(0, 4);
     if (recent.length === 0) {
