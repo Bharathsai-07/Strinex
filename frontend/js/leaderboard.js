@@ -160,18 +160,18 @@ async function renderLeaderboard() {
     nextWeekStart.setDate(nextWeekStart.getDate() + 7);
     const a = weekStart.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
     const b = new Date(nextWeekStart.getTime() - 1).toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
-    weekNote.textContent = `Weekly rankings (${a} - ${b}) · Auto reset every Sunday · Verified via Clerk JWT`;
+    weekNote.textContent = `Weekly rankings (${a} - ${b}) · Auto reset every Sunday`;
   }
 
   if (entries.length === 0) {
     body.innerHTML = `
       <tr>
-        <td colspan="4" style="padding:18px 12px;color:var(--muted);font-family:DM Mono,monospace;">No Clerk weekly run data yet. Complete a run to appear on the leaderboard.</td>
+        <td colspan="4" style="padding:18px 12px;color:var(--muted);font-family:DM Mono,monospace;">No weekly run data yet. Complete a run to appear on the leaderboard.</td>
       </tr>
     `;
     if (posNote) posNote.textContent = userId
       ? 'You have no qualifying run data this week yet.'
-      : 'Sign in with Clerk to track your weekly rank.';
+      : 'Sign in to track your weekly rank.';
     return;
   }
 

@@ -2,7 +2,7 @@
  * api.js — Backend integration helpers for Strinex.
  */
 
-const STRINEX_API_BASE = (window.STRINEX_CONFIG || {}).BACKEND_API_URL || 'http://localhost:5500';
+const STRINEX_API_BASE = (window.STRINEX_CONFIG || {}).BACKEND_API_URL || 'http://localhost:5000';
 
 async function _getClerkToken() {
     const clerk = window.Clerk;

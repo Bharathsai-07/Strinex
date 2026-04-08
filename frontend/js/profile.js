@@ -4,6 +4,7 @@
  */
 
 const PROFILE_RUN_HISTORY_KEY = 'strinex_run_history';
+const PROFILE_ACHIEVEMENTS_KEY = 'strinex_profile_achievements_v1';
 
 function _isProfileRunOwnedByUser(run, userId) {
     if (!run || typeof run !== 'object') return false;
@@ -59,6 +60,38 @@ function _formatPaceFromSecondsPerKm(secPerKm) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function _getAchievementUserId() {
+    return window.__clerkUser?.id || 'guest';
+}
+
+function _readAchievementStore() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(PROFILE_ACHIEVEMENTS_KEY) || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function _writeAchievementStore(store) {
+    localStorage.setItem(PROFILE_ACHIEVEMENTS_KEY, JSON.stringify(store));
+}
+
+function _readUnlockedAchievements() {
+    const store = _readAchievementStore();
+    const userId = _getAchievementUserId();
+    const unlocked = store[userId];
+    if (!unlocked || typeof unlocked !== 'object') return {};
+    return unlocked;
+}
+
+function _writeUnlockedAchievements(unlockedMap) {
+    const store = _readAchievementStore();
+    const userId = _getAchievementUserId();
+    store[userId] = unlockedMap;
+    _writeAchievementStore(store);
+}
+
 function _dayKey(ms) {
     const d = new Date(ms);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -69,6 +102,24 @@ function _weekStartSunday(baseDate = new Date()) {
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - d.getDay());
     return d;
+}
+
+function _calculateCurrentStreak(dayTotals, minDailyKm = 1) {
+    let streak = 0;
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+
+    while (true) {
+        const key = _dayKey(cursor.getTime());
+        if ((dayTotals[key] || 0) >= minDailyKm) {
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+            continue;
+        }
+        break;
+    }
+
+    return streak;
 }
 
 /**
@@ -129,73 +180,121 @@ function _getAchievements() {
             id: 'first-run',
             icon: '🥇',
             name: 'First Run',
-            sub: 'Completed first tracked run',
-            check: (stats) => stats.totalRuns >= 1,
+            description: 'Completed first tracked run',
+            condition: (stats) => stats.totalRuns >= 1,
+            unlocked: false,
         },
         {
             id: 'ten-k-club',
             icon: '🔟',
             name: '10K Club',
-            sub: 'First 10km in one session',
-            check: (stats) => stats.maxSingleRunKm >= 10,
+            description: 'First 10km in one session',
+            condition: (stats) => stats.longestRun >= 10,
+            unlocked: false,
         },
         {
             id: 'week-warrior',
             icon: '🔥',
             name: 'Week Warrior',
-            sub: '7-day streak maintained',
-            check: (stats) => stats.bestStreak >= 7,
+            description: '7-day streak maintained',
+            condition: (stats) => stats.streakDays >= 7,
+            unlocked: false,
         },
         {
             id: 'century',
             icon: '🏃',
             name: 'Century',
-            sub: '100km total distance',
-            check: (stats) => stats.totalDistance >= 100,
+            description: '100km total distance',
+            condition: (stats) => stats.totalDistance >= 100,
+            unlocked: false,
         },
         {
             id: 'marathon-master',
             icon: '💨',
             name: 'Marathon Master',
-            sub: 'Single run 21km+',
-            check: (stats) => stats.maxSingleRunKm >= 21,
+            description: 'Single run 21km+',
+            condition: (stats) => stats.longestRun >= 21,
+            unlocked: false,
         },
         {
             id: 'ultra-runner',
             icon: '⚡',
             name: 'Ultra Runner',
-            sub: 'Total 50km distance',
-            check: (stats) => stats.totalDistance >= 50,
+            description: 'Total 50km distance',
+            condition: (stats) => stats.totalDistance >= 50,
+            unlocked: false,
         },
         {
             id: 'speed-demon',
             icon: '🦅',
             name: 'Speed Demon',
-            sub: 'Sub 4:30/km pace',
-            check: (stats) => stats.bestPaceSec <= 270, // 270 sec = 4:30
+            description: 'Sub 4:30/km pace',
+            condition: (stats) => stats.bestPace > 0 && stats.bestPace <= 270,
+            unlocked: false,
         },
         {
             id: 'consistent-runner',
             icon: '🎯',
             name: 'Consistent Runner',
-            sub: '10+ runs completed',
-            check: (stats) => stats.totalRuns >= 10,
+            description: '10+ runs completed',
+            condition: (stats) => stats.totalRuns >= 10,
+            unlocked: false,
         },
         {
             id: 'globe-trotter',
             icon: '🌍',
             name: 'Globe Trotter',
-            sub: '500km total distance',
-            check: (stats) => stats.totalDistance >= 500,
+            description: '500km total distance',
+            condition: (stats) => stats.totalDistance >= 500,
+            unlocked: false,
         },
         {
             id: 'elite-pacer',
             icon: '⏱️',
             name: 'Elite Pacer',
-            sub: 'Sub 4:00/km pace',
-            check: (stats) => stats.bestPaceSec <= 240, // 240 sec = 4:00
+            description: 'Sub 4:00/km pace',
+            condition: (stats) => stats.bestPace > 0 && stats.bestPace <= 240,
+            unlocked: false,
         },
     ];
+}
+
+function _evaluateAchievements(stats, notifyUnlocks = false) {
+    const unlockedMap = _readUnlockedAchievements();
+    const defs = _getAchievements();
+    const newlyUnlocked = [];
+    let hasChanges = false;
+
+    const achievements = defs.map((achievement) => {
+        const conditionMet = typeof achievement.condition === 'function'
+            ? Boolean(achievement.condition(stats))
+            : Boolean(achievement.condition);
+        const previouslyUnlocked = Boolean(unlockedMap[achievement.id]);
+        const unlocked = previouslyUnlocked || conditionMet;
+
+        if (!previouslyUnlocked && unlocked) {
+            unlockedMap[achievement.id] = true;
+            newlyUnlocked.push(achievement);
+            hasChanges = true;
+        }
+
+        return {
+            ...achievement,
+            unlocked,
+        };
+    });
+
+    if (hasChanges) {
+        _writeUnlockedAchievements(unlockedMap);
+    }
+
+    if (notifyUnlocks && newlyUnlocked.length > 0 && typeof toast === 'function') {
+        newlyUnlocked.forEach((achievement) => {
+            toast(`Achievement unlocked: ${achievement.name}`, 'success', 3200);
+        });
+    }
+
+    return achievements;
 }
 
 /**
@@ -214,17 +313,17 @@ async function _computeProfileStats() {
 
     const totalRuns = runs.length;
     const totalDistance = runs.reduce((sum, r) => sum + r.dist, 0);
-    const maxSingleRunKm = runs.length > 0 ? Math.max(...runs.map(r => r.dist)) : 0;
+    const longestRun = runs.length > 0 ? Math.max(...runs.map(r => r.dist)) : 0;
 
     // Best pace (lowest seconds per km)
-    let bestPaceSec = Infinity;
+    let bestPace = Infinity;
     runs.forEach(run => {
         if (run.dist > 0 && run.durationSec > 0) {
             const pace = run.durationSec / run.dist;
-            bestPaceSec = Math.min(bestPaceSec, pace);
+            bestPace = Math.min(bestPace, pace);
         }
     });
-    bestPaceSec = bestPaceSec === Infinity ? 0 : bestPaceSec;
+    bestPace = bestPace === Infinity ? 0 : bestPace;
 
     // Best streak overall (compute from all historical days)
     const dayTotals = {};
@@ -252,21 +351,28 @@ async function _computeProfileStats() {
         }
     });
 
+    const streakDays = _calculateCurrentStreak(dayTotals, 1);
+
     const xp = _calculateXP(runs);
     const levelInfo = _calculateLevel(xp);
 
     return {
         totalRuns,
         totalDistance,
-        maxSingleRunKm,
-        bestPaceSec,
+        longestRun,
+        bestPace,
+        streakDays,
         bestStreak,
+        // Backward-compatible aliases for existing profile UI consumers.
+        maxSingleRunKm: longestRun,
+        bestPaceSec: bestPace,
         xp,
         levelInfo,
     };
 }
 
-async function updateProfileStats() {
+async function updateProfileStats(options = {}) {
+    const { notifyUnlocks = false } = options;
     const levelEl = document.getElementById('profile-level');
     const xpTextEl = document.getElementById('profile-xp-text');
     const xpFillEl = document.getElementById('profile-xp-fill');
@@ -301,18 +407,17 @@ async function updateProfileStats() {
     if (streakEl) streakEl.innerHTML = `🔥 ${stats.bestStreak}<span class="s-unit">days</span>`;
     if (paceEl) paceEl.innerHTML = `${_formatPaceFromSecondsPerKm(stats.bestPaceSec)}<span class="s-unit">/km</span>`;
 
-    // Render achievements
-    const achievements = _getAchievements();
+    // Render achievements with persisted unlock state and transition handling.
+    const achievements = _evaluateAchievements(stats, notifyUnlocks);
     if (achievementsGridEl) {
         achievementsGridEl.innerHTML = achievements.map(ach => {
-            const unlocked = ach.check(stats);
-            const lockedCls = unlocked ? '' : ' locked';
+            const lockedCls = ach.unlocked ? '' : ' locked';
             return `
-                <div class="achievement${lockedCls}">
+                <div class="achievement${lockedCls}" data-achievement-id="${ach.id}" aria-disabled="${ach.unlocked ? 'false' : 'true'}">
                     <div class="ach-icon">${ach.icon}</div>
                     <div>
                         <div class="ach-name">${ach.name}</div>
-                        <div class="ach-sub">${ach.sub}</div>
+                        <div class="ach-sub">${ach.description}</div>
                     </div>
                 </div>
             `;
@@ -322,3 +427,6 @@ async function updateProfileStats() {
 
 window.updateProfileStats = updateProfileStats;
 window.addEventListener('DOMContentLoaded', updateProfileStats);
+window.addEventListener('strinex:activity-updated', () => {
+    updateProfileStats({ notifyUnlocks: true });
+});

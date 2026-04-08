@@ -9,9 +9,9 @@
  *    NEVER use your Clerk SECRET key (sk_...) here.
  */
 window.STRINEX_CONFIG = {
-    CLERK_PUBLISHABLE_KEY: 'pk_test_c2F2aW5nLXNwb25nZS05Mi5jbGVyay5hY2NvdW50cy5kZXYk',
+    CLERK_PUBLISHABLE_KEY: 'pk_test_Y2l2aWwtY2FpbWFuLTIxLmNsZXJrLmFjY291bnRzLmRldiQ',
     MAPTILER_API_KEY: 'MbtlpWEiezLDPteE1AAF',
-    BACKEND_API_URL: 'http://localhost:5500',
+    BACKEND_API_URL: 'http://localhost:5000',
     CHATBOT_API_KEY: 'AIzaSyANc1uywX7Ex-5uDKS-hlZna-ftHVeHm9M',
     CHATBOT_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
 };

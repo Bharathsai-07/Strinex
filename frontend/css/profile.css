@@ -161,7 +161,6 @@
         flex: 1 1 calc(50% - 4px);
         min-width: 0;
         max-width: 100%;
-        opacity: 0.35;
         padding: 10px 12px;
     }
 }
@@ -225,7 +224,8 @@
     align-items: center;
     gap: 12px;
     min-width: 175px;
-    opacity: 0.35;
+    opacity: 1;
+    transition: opacity 180ms ease, filter 180ms ease, border-color 180ms ease;
 }
 
 .achievement.first-run-achievement {
@@ -250,6 +250,7 @@
 }
 
 .achievement.locked {
-    opacity: 0.35;
+    opacity: 0.25;
     filter: grayscale(1);
+    pointer-events: none;
 }

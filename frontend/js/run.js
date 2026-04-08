@@ -459,6 +459,15 @@ function _getCurrentUserRunHistory() {
     return _getRunHistory().filter(run => _isRunOwnedByUser(run));
 }
 
+function _emitActivityUpdate(type = 'runs-updated') {
+    window.dispatchEvent(new CustomEvent('strinex:activity-updated', {
+        detail: {
+            type,
+            at: Date.now(),
+        },
+    }));
+}
+
 async function _getCurrentUserRunsForDisplay() {
     if (window.__clerkUser && typeof loadCurrentUserRuns === 'function') {
         try {
@@ -516,8 +525,9 @@ async function _saveRunToHistory(runData) {
     if (typeof renderLeaderboard === 'function') {
         renderLeaderboard();
     }
+    _emitActivityUpdate('run-logged');
     if (typeof updateProfileStats === 'function') {
-        updateProfileStats();
+        updateProfileStats({ notifyUnlocks: true });
     }
 }
 
@@ -589,8 +599,9 @@ function clearRunHistory() {
         if (typeof renderLeaderboard === 'function') {
             renderLeaderboard();
         }
+        _emitActivityUpdate('run-history-cleared');
         if (typeof updateProfileStats === 'function') {
-            updateProfileStats();
+            updateProfileStats({ notifyUnlocks: false });
         }
         if (typeof toast === 'function') toast('Run history cleared', 'info');
     })();
@@ -614,8 +625,9 @@ function deleteRun(runId) {
         if (typeof renderLeaderboard === 'function') {
             renderLeaderboard();
         }
+        _emitActivityUpdate('run-deleted');
         if (typeof updateProfileStats === 'function') {
-            updateProfileStats();
+            updateProfileStats({ notifyUnlocks: false });
         }
     })();
 }
