@@ -34,10 +34,32 @@ async function backendFetch(path, options = {}) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || `Request failed with status ${response.status}`);
+        const error = new Error(errorText || `Request failed with status ${response.status}`);
+        error.status = response.status;
+        error.path = path;
+        throw error;
     }
 
     return response.json();
+}
+
+async function checkBackendHealth(timeoutMs = 5000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(`${STRINEX_API_BASE}/health`, {
+            method: 'GET',
+            signal: controller.signal,
+        });
+        if (!response.ok) return false;
+        const data = await response.json().catch(() => ({}));
+        return data?.status === 'ok';
+    } catch (error) {
+        return false;
+    } finally {
+        clearTimeout(timeoutId);
+    }
 }
 
 async function fetchUserRuns(limit = 200) {

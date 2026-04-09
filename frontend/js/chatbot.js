@@ -1,10 +1,11 @@
 /**
- * chatbot.js — STRINEX AI Coach (Google Gemini)
+ * chatbot.js — STRINEX AI Coach (backend-routed Gemini)
  *
  * Opens a slide-up drawer with run context, auto-generates a full
  * run analysis on open, and handles follow-up Q&A about diet & training.
+ * All messages are persisted to MongoDB via HTTP and loaded on open.
  *
- * Depends on: config.js (STRINEX_CONFIG.CHATBOT_API_KEY / CHATBOT_API_URL)
+ * Depends on: api.js (backendFetch), auth.js (session)
  */
 
 // ── State ────────────────────────────────────────────────────────────
@@ -12,6 +13,8 @@ let _chatRunData = null;
 let _chatHistory = [];
 let _chatBusy = false;
 let _systemInstruction = '';
+let _chatSessionId = '';
+let _chatHistoryLoaded = false;
 
 // ── Open / Close ─────────────────────────────────────────────────────
 
@@ -19,10 +22,15 @@ function openChatbot(runData) {
     _chatRunData = runData;
     _chatHistory = [];
     _chatBusy = false;
+    _chatHistoryLoaded = false;
 
-    const drawer = document.getElementById('chatbot-drawer');
+    // Generate a new session ID or retain a persistent one per browser session
+    if (!_chatSessionId) {
+        _chatSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    }
+
     const thread = document.getElementById('chat-thread');
-    if (!drawer || !thread) return;
+    if (!thread) return;
 
     thread.innerHTML = '';
 
@@ -48,27 +56,88 @@ Strinex is a real-time GPS fitness tracker web app. Features:
 - Use bullet points and emojis for readability
 - Never give medical advice — suggest consulting a doctor for injuries`;
 
-    // Show drawer
-    drawer.classList.add('open');
-
-    // Automatically generate a full run analysis
-    _autoAnalyzeRun(runData);
+    // Load chat history from backend first, then auto-analyze if needed
+    _loadChatHistory(runData);
 }
 
 function closeChatbot() {
-    const drawer = document.getElementById('chatbot-drawer');
-    if (drawer) drawer.classList.remove('open');
+    if (typeof showPage === 'function') {
+        showPage('run');
+    }
+}
+
+// ── Load Chat History from MongoDB ──────────────────────────────────
+
+async function _loadChatHistory(runData) {
+    if (typeof backendFetch !== 'function') {
+        _appendBubble('ai', 'Ask me about training, recovery, pace, or nutrition. If you start a run, I can also analyze live stats from the run page.');
+        document.getElementById('chat-input')?.focus();
+        return;
+    }
+
+    if (typeof checkBackendHealth === 'function') {
+        const backendUp = await checkBackendHealth();
+        if (!backendUp) {
+            _appendBubble('ai', '⚠️ Cannot connect to Strinex backend. Start backend with `npm run backend:start` and make sure it is reachable at http://localhost:5000.');
+            document.getElementById('chat-input')?.focus();
+            return;
+        }
+    }
+
+    try {
+        const data = await backendFetch('/ai-analysis/history?limit=50');
+        const messages = data?.messages || [];
+
+        if (messages.length > 0) {
+            _chatHistoryLoaded = true;
+            // Render saved messages
+            messages.forEach(msg => {
+                if (msg.role === 'user') {
+                    // Show a cleaned-up version of user messages (strip context prefix)
+                    let displayText = msg.content;
+                    const contextMatch = displayText.match(/User's question:\s*(.+)/s);
+                    if (contextMatch) {
+                        displayText = contextMatch[1].trim();
+                    }
+                    // Don't show auto-analysis prompts as user bubbles
+                    if (!displayText.startsWith('The user just completed a run') && displayText !== 'Run analysis request') {
+                        _appendBubble('user', _escHtml(displayText));
+                    }
+                } else if (msg.role === 'ai') {
+                    _appendBubble('ai', _mdToHtml(msg.content));
+                }
+                _chatHistory.push({ role: msg.role, parts: [{ text: msg.content }] });
+            });
+
+            // Add separator for existing history
+            const thread = document.getElementById('chat-thread');
+            if (thread && messages.length > 0) {
+                const sep = document.createElement('div');
+                sep.className = 'chat-history-separator';
+                sep.innerHTML = '<span>— Previous messages loaded —</span>';
+                thread.appendChild(sep);
+                thread.scrollTop = thread.scrollHeight;
+            }
+        }
+    } catch (err) {
+        console.log('[chatbot] Could not load chat history:', err.message);
+    }
+
+    // If there's run data and no history was loaded, auto-analyze
+    if (runData && !_chatHistoryLoaded) {
+        _autoAnalyzeRun(runData);
+    } else if (!runData && !_chatHistoryLoaded) {
+        _appendBubble('ai', 'Ask me about training, recovery, pace, or nutrition. If you start a run, I can also analyze live stats from the run page.');
+    }
+
+    document.getElementById('chat-input')?.focus();
 }
 
 // ── Auto-Analyze Run ─────────────────────────────────────────────────
 
 async function _autoAnalyzeRun(runData) {
-    const cfg = window.STRINEX_CONFIG || {};
-    const apiKey = cfg.CHATBOT_API_KEY || '';
-    const apiUrl = cfg.CHATBOT_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-    if (!apiKey || apiKey.includes('PASTE_YOUR')) {
-        _appendBubble('ai', '⚠️ <b>API key not configured.</b> Add your Gemini API key in <code>config.js</code>.');
+    if (typeof backendFetch !== 'function') {
+        _appendBubble('ai', '⚠️ AI service is unavailable. Backend API helper not found.');
         return;
     }
 
@@ -94,7 +163,7 @@ Please provide a COMPLETE post-run analysis with ALL of the following sections:
 
 Be thorough and specific. Use the actual run numbers in your analysis.`;
 
-    // Add to conversation history
+    // Keep a lightweight local history for UX continuity.
     _chatHistory.push({ role: 'user', parts: [{ text: analysisPrompt }] });
 
     // Show typing indicator
@@ -102,7 +171,10 @@ Be thorough and specific. Use the actual run numbers in your analysis.`;
     _chatBusy = true;
 
     try {
-        const reply = await _callGemini(apiKey, apiUrl);
+        const reply = await _callBackendAI({
+            userPrompt: analysisPrompt,
+            runData,
+        });
         _removeTyping(typingId);
 
         if (reply) {
@@ -114,7 +186,13 @@ Be thorough and specific. Use the actual run numbers in your analysis.`;
     } catch (err) {
         _removeTyping(typingId);
         console.error('[chatbot] Auto-analysis error:', err);
-        _appendBubble('ai', '⚠️ Could not connect to AI. Check your API key and try again.');
+        if (err?.status === 401) {
+            _appendBubble('ai', '⚠️ You are not authenticated. Please sign in again and reopen AI Coach.');
+        } else if (err?.status === 403) {
+            _appendBubble('ai', '⚠️ Access denied for AI Coach. Check your auth session and try again.');
+        } else {
+            _appendBubble('ai', '⚠️ Could not connect to AI service. Verify backend is running on http://localhost:5000 and try again.');
+        }
     }
 
     _chatBusy = false;
@@ -130,12 +208,8 @@ async function sendChatMessage() {
     const text = (input?.value || '').trim();
     if (!text) return;
 
-    const cfg = window.STRINEX_CONFIG || {};
-    const apiKey = cfg.CHATBOT_API_KEY || '';
-    const apiUrl = cfg.CHATBOT_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-    if (!apiKey || apiKey.includes('PASTE_YOUR')) {
-        _appendBubble('ai', '⚠️ <b>API key not configured.</b> Add your Gemini API key in <code>config.js</code>.');
+    if (typeof backendFetch !== 'function') {
+        _appendBubble('ai', '⚠️ AI service is unavailable. Backend API helper not found.');
         return;
     }
 
@@ -143,9 +217,12 @@ async function sendChatMessage() {
     input.value = '';
 
     // Add context reminder with every user message so Gemini stays on topic
-    const contextReminder = `[Context: The user's last run was ${_chatRunData.distance} in ${_chatRunData.duration}, pace ${_chatRunData.pace}, calories ${_chatRunData.calories || 'N/A'}. Always relate your answer to their running and fitness goals on Strinex.]
+    let contextReminder = `User's question: ${text}`;
+    if (_chatRunData) {
+        contextReminder = `[Context: The user's last run was ${_chatRunData.distance} in ${_chatRunData.duration}, pace ${_chatRunData.pace}, calories ${_chatRunData.calories || 'N/A'}. Always relate your answer to their running and fitness goals on Strinex.]
 
-User's question: ${text}`;
+User's question: ${text}`
+    };
 
     _chatHistory.push({ role: 'user', parts: [{ text: contextReminder }] });
 
@@ -153,7 +230,10 @@ User's question: ${text}`;
     _chatBusy = true;
 
     try {
-        const reply = await _callGemini(apiKey, apiUrl);
+        const reply = await _callBackendAI({
+            userPrompt: contextReminder,
+            runData: _chatRunData,
+        });
         _removeTyping(typingId);
 
         if (reply) {
@@ -165,47 +245,84 @@ User's question: ${text}`;
     } catch (err) {
         _removeTyping(typingId);
         console.error('[chatbot] Send error:', err);
-        _appendBubble('ai', '⚠️ Network error — check your connection and try again.');
+        if (err?.status === 401) {
+            _appendBubble('ai', '⚠️ Session expired. Please sign in again to continue chatting.');
+        } else if (err?.status === 400) {
+            _appendBubble('ai', '⚠️ Invalid request sent to AI Coach. Try again after starting a run.');
+        } else {
+            _appendBubble('ai', '⚠️ Network error — ensure backend is running and reachable at http://localhost:5000.');
+        }
     }
 
     _chatBusy = false;
 }
 
-// ── Gemini API Call ──────────────────────────────────────────────────
+// ── Backend AI Call ─────────────────────────────────────────────────
 
-async function _callGemini(apiKey, apiUrl) {
-    const requestBody = {
-        system_instruction: {
-            parts: [{ text: _systemInstruction }]
+function _parseDistanceKm(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const parsed = parseFloat(String(value || '').replace(/[^\d.]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function _parseDurationSec(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const m = String(value || '').match(/^(\d+):(\d{2})$/);
+    if (!m) return 0;
+    return (parseInt(m[1], 10) * 60) + parseInt(m[2], 10);
+}
+
+function _parsePaceMinPerKm(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const match = String(value || '').match(/(\d+):(\d{2})/);
+    if (!match) return 0;
+    return parseInt(match[1], 10) + (parseInt(match[2], 10) / 60);
+}
+
+async function _callBackendAI({ userPrompt, runData }) {
+    const distance = _parseDistanceKm(runData?.distanceRaw ?? runData?.distance);
+    const duration = _parseDurationSec(runData?.durationRaw ?? runData?.duration);
+    const pace = _parsePaceMinPerKm(runData?.paceRaw ?? runData?.pace);
+
+    const payload = {
+        distance,
+        duration,
+        pace,
+        userPrompt,
+        systemInstruction: _systemInstruction,
+        sessionId: _chatSessionId,
+        runContext: {
+            calories: runData?.calories,
+            timestamp: runData?.timestamp,
+            gpsPoints: runData?.gpsPoints,
         },
-        contents: _chatHistory,
-        generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 2048,
-            topP: 0.95,
-            topK: 40,
-        }
     };
 
-    const res = await fetch(`${apiUrl}?key=${apiKey}`, {
+    const data = await backendFetch('/ai-analysis', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(payload),
     });
 
-    if (!res.ok) {
-        const errBody = await res.text();
-        console.error('[chatbot] Gemini API error:', res.status, errBody);
-        throw new Error(`API error: ${res.status}`);
+    return data?.suggestions || null;
+}
+
+// ── Clear Chat History ──────────────────────────────────────────────
+
+async function clearChatHistory() {
+    if (typeof backendFetch !== 'function') return;
+
+    try {
+        await backendFetch('/ai-analysis/history', { method: 'DELETE' });
+        _chatHistory = [];
+        _chatSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        const thread = document.getElementById('chat-thread');
+        if (thread) {
+            thread.innerHTML = '';
+            _appendBubble('ai', '🗑️ Chat history cleared. Ask me anything about training, recovery, or nutrition!');
+        }
+    } catch (err) {
+        console.error('[chatbot] Clear history error:', err);
     }
-
-    const data = await res.json();
-
-    // Gemini may return multiple parts — concatenate them all
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const fullReply = parts.map(p => p.text || '').join('\n');
-
-    return fullReply || null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────

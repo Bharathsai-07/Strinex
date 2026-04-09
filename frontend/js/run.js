@@ -112,6 +112,34 @@ window.initMap = initMap;
 
 function toggleRun() { running ? stopRun() : startRun(); }
 
+function getLiveRunSnapshot() {
+    const dist = _calcDist(routeCoords);
+    const pacePerKm = dist > 0 && elapsed > 0 ? (elapsed / 60) / dist : 0;
+
+    return {
+        distance: `${dist.toFixed(2)} km`,
+        distanceRaw: dist,
+        duration: fmt(elapsed),
+        durationRaw: elapsed,
+        pace: pacePerKm > 0
+            ? `${Math.floor(pacePerKm)}:${Math.round((pacePerKm % 1) * 60).toString().padStart(2, '0')} min/km`
+            : '--:-- min/km',
+        paceRaw: pacePerKm,
+        calories: null,
+        timestamp: new Date().toLocaleString(),
+        gpsPoints: routeCoords.length,
+    };
+}
+
+function openRunCoach() {
+    if (typeof openChatbot !== 'function') return;
+    const snapshot = getLiveRunSnapshot();
+    if (typeof showPage === 'function') {
+        showPage('chatbot');
+    }
+    setTimeout(() => openChatbot(snapshot), 0);
+}
+
 function startRun() {
     if (!navigator.geolocation) {
         _showGeoError('Geolocation is not supported by your browser.');
@@ -169,14 +197,13 @@ function startRun() {
             _placeUserMarker(coord);
             map.panTo(coord, { animate: true, duration: 0.5 });
 
-            // Calculate and display distance, pace, speed, points
+            // Calculate and display distance, pace, and speed
             const dist = _calcDist(routeCoords);
             document.getElementById('live-dist').innerHTML = `${dist.toFixed(2)} <span style="font-size:1rem;color:var(--muted)">km</span>`;
             const speedKmh = elapsed > 0 && dist > 0 ? dist / (elapsed / 3600) : 0;
             const pacePerKm = dist > 0 && elapsed > 0 ? (elapsed / 60) / dist : 0; // min/km
             document.getElementById('live-pace').textContent = pacePerKm > 0 ? `${Math.floor(pacePerKm)}:${Math.round((pacePerKm % 1) * 60).toString().padStart(2, '0')}` : '--:--';
             document.getElementById('live-speed').innerHTML = speedKmh > 0 ? `${speedKmh.toFixed(1)} <span style="font-size:0.65rem;color:var(--muted)">km/h</span>` : '0.0 <span style="font-size:0.65rem;color:var(--muted)">km/h</span>';
-            document.getElementById('live-pts').textContent = routeCoords.length;
             const coordEl = document.getElementById('coord-count');
             if (coordEl) coordEl.textContent = `Route: ${routeCoords.length} GPS points logged`;
 

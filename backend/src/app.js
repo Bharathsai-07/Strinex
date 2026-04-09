@@ -15,10 +15,19 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000,http:
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+function isLoopbackOrigin(origin) {
+  try {
+    const parsed = new URL(origin);
+    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || isLoopbackOrigin(origin)) {
         callback(null, true);
         return;
       }

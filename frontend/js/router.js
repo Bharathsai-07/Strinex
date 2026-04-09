@@ -2,8 +2,6 @@
  * router.js — Page routing and active nav-button state
  */
 
-const pages = ['landing', 'dashboard', 'run', 'leaderboard', 'profile'];
-
 function requestRunMapInit(attempt = 0) {
     const init = window.initMap;
     if (typeof init === 'function') {
@@ -30,7 +28,7 @@ function showPage(id) {
     }
 
     // Protected pages require sign-in
-    const protectedPages = ['dashboard', 'leaderboard', 'profile'];
+    const protectedPages = ['dashboard', 'run', 'chatbot', 'leaderboard', 'profile'];
     if (protectedPages.includes(id) && !isSignedIn()) {
         toast('Please sign in to access this page.', 'info');
         openAuth();
@@ -38,8 +36,8 @@ function showPage(id) {
     }
 
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', pages[i] === id);
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.page === id);
     });
     document.getElementById('page-' + id).classList.add('active');
 
