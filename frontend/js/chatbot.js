@@ -68,6 +68,10 @@ function closeChatbot() {
 
 // ── Load Chat History from MongoDB ──────────────────────────────────
 
+function _getBackendBaseUrl() {
+    return (window.STRINEX_CONFIG || {}).BACKEND_API_URL || 'http://localhost:5000';
+}
+
 async function _loadChatHistory(runData) {
     if (typeof backendFetch !== 'function') {
         _appendBubble('ai', 'Ask me about training, recovery, pace, or nutrition. If you start a run, I can also analyze live stats from the run page.');
@@ -78,7 +82,8 @@ async function _loadChatHistory(runData) {
     if (typeof checkBackendHealth === 'function') {
         const backendUp = await checkBackendHealth();
         if (!backendUp) {
-            _appendBubble('ai', '⚠️ Cannot connect to Strinex backend. Start backend with `npm run backend:start` and make sure it is reachable at http://localhost:5000.');
+            const backendUrl = _getBackendBaseUrl();
+            _appendBubble('ai', `⚠️ Cannot connect to Strinex backend. Make sure it is reachable at ${backendUrl}.`);
             document.getElementById('chat-input')?.focus();
             return;
         }
@@ -191,7 +196,8 @@ Be thorough and specific. Use the actual run numbers in your analysis.`;
         } else if (err?.status === 403) {
             _appendBubble('ai', '⚠️ Access denied for AI Coach. Check your auth session and try again.');
         } else {
-            _appendBubble('ai', '⚠️ Could not connect to AI service. Verify backend is running on http://localhost:5000 and try again.');
+            const backendUrl = _getBackendBaseUrl();
+            _appendBubble('ai', `⚠️ Could not connect to AI service. Verify backend is running on ${backendUrl} and try again.`);
         }
     }
 
@@ -250,7 +256,8 @@ User's question: ${text}`
         } else if (err?.status === 400) {
             _appendBubble('ai', '⚠️ Invalid request sent to AI Coach. Try again after starting a run.');
         } else {
-            _appendBubble('ai', '⚠️ Network error — ensure backend is running and reachable at http://localhost:5000.');
+            const backendUrl = _getBackendBaseUrl();
+            _appendBubble('ai', `⚠️ Network error — ensure backend is running and reachable at ${backendUrl}.`);
         }
     }
 
