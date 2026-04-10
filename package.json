@@ -12,7 +12,7 @@
   "scripts": {
     "backend:start": "node backend/src/server.js",
     "backend:dev": "nodemon backend/src/server.js",
-    "start": "npx serve . -l 3000",
+    "start": "npx serve frontend/ -l 3000",
     "mobile": "npx serve . -l 0.0.0.0:3000"
   },
   "devDependencies": {
