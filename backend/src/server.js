@@ -13,10 +13,19 @@ function normalizeOrigin(origin) {
   return String(origin || "").trim().replace(/\/+$/, "");
 }
 
-const allowedOrigins = (process.env.CORS_ORIGINS || "https://strinex.onrender.com,http://localhost:3000,http://127.0.0.1:3000")
+const allowedOrigins = (process.env.CORS_ORIGINS || "https://strinex.onrender.com,https://strinex-07.onrender.com,http://localhost:3000,http://127.0.0.1:3000")
   .split(",")
   .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
+
+const fallbackOrigins = [
+  "https://strinex.onrender.com",
+  "https://strinex-07.onrender.com",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+].map((origin) => normalizeOrigin(origin));
+
+const allowOriginSet = new Set([...allowedOrigins, ...fallbackOrigins]);
 
 function isLoopbackOrigin(origin) {
   try {
@@ -35,7 +44,7 @@ async function startServer() {
     cors: {
       origin: (origin, callback) => {
         const normalizedOrigin = normalizeOrigin(origin);
-        if (!origin || allowedOrigins.includes(normalizedOrigin) || isLoopbackOrigin(normalizedOrigin)) {
+        if (!origin || allowOriginSet.has(normalizedOrigin) || isLoopbackOrigin(normalizedOrigin)) {
           callback(null, true);
           return;
         }
