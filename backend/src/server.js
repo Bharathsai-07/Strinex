@@ -9,7 +9,7 @@ const registerChatSocket = require("./socket/chatSocket");
 
 const port = Number(process.env.PORT) || 5000;
 
-const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000")
+const allowedOrigins = (process.env.CORS_ORIGINS || "https://strinex.onrender.com,http://localhost:3000,http://127.0.0.1:3000")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
