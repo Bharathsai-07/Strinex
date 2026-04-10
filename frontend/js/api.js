@@ -29,6 +29,7 @@ async function backendFetch(path, options = {}) {
 
     const response = await fetch(`${STRINEX_API_BASE}${path}`, {
         ...options,
+        credentials: options.credentials || 'include',
         headers,
     });
 
@@ -50,6 +51,7 @@ async function checkBackendHealth(timeoutMs = 5000) {
     try {
         const response = await fetch(`${STRINEX_API_BASE}/health`, {
             method: 'GET',
+            credentials: 'include',
             signal: controller.signal,
         });
         if (!response.ok) return false;
