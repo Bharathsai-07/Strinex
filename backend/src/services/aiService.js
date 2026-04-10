@@ -115,6 +115,18 @@ async function generateRunAnalysis({
         });
       }
 
+      if (response.status === 503 || bodyLower.includes("unavailable") || bodyLower.includes("high demand")) {
+        console.log(`[aiService] → Model unavailable, using offline fallback`);
+        return _buildQuotaFallback({
+          distance,
+          duration,
+          pace,
+          streak,
+          userPrompt: normalizedPrompt,
+          runContext,
+        });
+      }
+
       if (bodyLower.includes("api_key_invalid") || bodyLower.includes("api key not valid")) {
         throw new Error("Gemini API key is invalid. Update GEMINI_API_KEY in .env with a valid key from Google AI Studio and restart backend.");
       }
@@ -126,6 +138,17 @@ async function generateRunAnalysis({
 
     // Check if response contains error (sometimes Gemini returns 200 with error in body)
     if (data?.error?.message && data.error.message.toLowerCase().includes("quota")) {
+      return _buildQuotaFallback({
+        distance,
+        duration,
+        pace,
+        streak,
+        userPrompt: normalizedPrompt,
+        runContext,
+      });
+    }
+
+    if (data?.error?.status && String(data.error.status).toLowerCase() === "unavailable") {
       return _buildQuotaFallback({
         distance,
         duration,
