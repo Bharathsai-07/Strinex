@@ -9,9 +9,13 @@ const registerChatSocket = require("./socket/chatSocket");
 
 const port = Number(process.env.PORT) || 5000;
 
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/+$/, "");
+}
+
 const allowedOrigins = (process.env.CORS_ORIGINS || "https://strinex.onrender.com,http://localhost:3000,http://127.0.0.1:3000")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
 function isLoopbackOrigin(origin) {
@@ -30,7 +34,8 @@ async function startServer() {
   const io = new Server(server, {
     cors: {
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || isLoopbackOrigin(origin)) {
+        const normalizedOrigin = normalizeOrigin(origin);
+        if (!origin || allowedOrigins.includes(normalizedOrigin) || isLoopbackOrigin(normalizedOrigin)) {
           callback(null, true);
           return;
         }

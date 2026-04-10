@@ -10,9 +10,15 @@ const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
 
+const mongoose = require("mongoose");
+
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/+$/, "");
+}
+
 const allowedOrigins = (process.env.CORS_ORIGINS || "https://strinex.onrender.com,http://localhost:3000,http://127.0.0.1:3000")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
 function isLoopbackOrigin(origin) {
@@ -27,7 +33,8 @@ function isLoopbackOrigin(origin) {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || isLoopbackOrigin(origin)) {
+      const normalizedOrigin = normalizeOrigin(origin);
+      if (!origin || allowedOrigins.includes(normalizedOrigin) || isLoopbackOrigin(normalizedOrigin)) {
         callback(null, true);
         return;
       }
@@ -42,6 +49,20 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", service: "strinex-backend" });
+});
+
+app.get("/healthz", (req, res) => {
+  res.json({ status: "ok", service: "strinex-backend" });
+});
+
+app.get("/ready", (req, res) => {
+  const readyState = mongoose.connection.readyState;
+  const isReady = readyState === 1;
+  res.status(isReady ? 200 : 503).json({
+    status: isReady ? "ready" : "not_ready",
+    service: "strinex-backend",
+    dbState: readyState,
+  });
 });
 
 app.use("/runs", runRoutes);
