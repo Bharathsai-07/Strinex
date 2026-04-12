@@ -53,7 +53,10 @@ Strinex is a real-time GPS fitness tracker web app. Features:
 - For recovery: hydration targets in litres, stretching routines, foam rolling, sleep hours
 - For training: progression tips, tempo runs, intervals, easy runs, cross-training
 - Always relate advice to improving Strinex stats
-- Use bullet points and emojis for readability
+- Keep responses short and practical
+- Default format: 3 to 5 bullet points max
+- Keep each bullet to one short sentence
+- Use plain language; avoid long paragraphs
 - Never give medical advice — suggest consulting a doctor for injuries`;
 
     // Load chat history from backend first, then auto-analyze if needed
@@ -128,8 +131,8 @@ async function _loadChatHistory(runData) {
         console.log('[chatbot] Could not load chat history:', err.message);
     }
 
-    // If there's run data and no history was loaded, auto-analyze
-    if (runData && !_chatHistoryLoaded) {
+    // If there's run data, always generate a fresh next-run plan for this run.
+    if (runData) {
         _autoAnalyzeRun(runData);
     } else if (!runData && !_chatHistoryLoaded) {
         _appendBubble('ai', 'Ask me about training, recovery, pace, or nutrition. If you start a run, I can also analyze live stats from the run page.');
@@ -146,8 +149,8 @@ async function _autoAnalyzeRun(runData) {
         return;
     }
 
-    // Build the auto-analysis prompt with all run details
-    const analysisPrompt = `The user just completed a run on Strinex. Here are the EXACT details:
+    // Build a concise, next-run-focused prompt.
+    const analysisPrompt = `The user just completed a run on Strinex. Here are the exact details:
 
 📊 **RUN STATS:**
 - Distance: ${runData.distance}
@@ -157,16 +160,15 @@ async function _autoAnalyzeRun(runData) {
 - Date/Time: ${runData.timestamp || 'N/A'}
 - GPS Points Logged: ${runData.gpsPoints || 'N/A'}
 
-Please provide a COMPLETE post-run analysis with ALL of the following sections:
+Give a very short "Next Run Improvement Plan" based on these numbers.
 
-1. **🏅 Run Summary** — Rate this run (beginner/intermediate/advanced effort), highlight what went well
-2. **🍽️ Post-Run Meal Plan** — Exactly what to eat RIGHT NOW for recovery (specific foods, portions). Include both Indian and international options
-3. **💧 Hydration** — How much water/electrolytes to drink based on the distance
-4. **🧘 Recovery Plan** — Stretches and rest recommendations for today
-5. **📈 Next Run Tip** — One actionable suggestion to improve next time on Strinex
-6. **🏆 Achievement Progress** — Which Strinex badges they might be close to based on this run
-
-Be thorough and specific. Use the actual run numbers in your analysis.`;
+STRICT OUTPUT RULES:
+- Maximum 5 bullet points total
+- Each bullet must be one short sentence
+- Focus on the next run only (what to change next time)
+- Include: 1 pacing fix, 1 distance/time target, 1 recovery action, 1 nutrition/hydration action
+- End with one motivational one-liner
+- No long explanations and no extra sections.`;
 
     // Keep a lightweight local history for UX continuity.
     _chatHistory.push({ role: 'user', parts: [{ text: analysisPrompt }] });
@@ -225,7 +227,7 @@ async function sendChatMessage() {
     // Add context reminder with every user message so Gemini stays on topic
     let contextReminder = `User's question: ${text}`;
     if (_chatRunData) {
-        contextReminder = `[Context: The user's last run was ${_chatRunData.distance} in ${_chatRunData.duration}, pace ${_chatRunData.pace}, calories ${_chatRunData.calories || 'N/A'}. Always relate your answer to their running and fitness goals on Strinex.]
+        contextReminder = `[Context: The user's last run was ${_chatRunData.distance} in ${_chatRunData.duration}, pace ${_chatRunData.pace}, calories ${_chatRunData.calories || 'N/A'}. Keep advice concise (3-5 short bullet points). Always relate your answer to their running and fitness goals on Strinex.]
 
 User's question: ${text}`
     };

@@ -131,9 +131,9 @@ function getLiveRunSnapshot() {
     };
 }
 
-function openRunCoach() {
+function openRunCoach(runData) {
     if (typeof openChatbot !== 'function') return;
-    const snapshot = getLiveRunSnapshot();
+    const snapshot = runData || getLiveRunSnapshot();
     if (typeof showPage === 'function') {
         showPage('chatbot');
     }
@@ -600,7 +600,7 @@ async function renderRunHistory() {
                 </div>
             </div>
             <div class="rh-stat-label" style="margin-top:4px;font-size:0.6rem;">${run.gpsPoints || 0} GPS points</div>
-            <button class="rh-ai-btn" onclick='openChatbot(${JSON.stringify(run).replace(/'/g, "&#39;")})'>
+            <button class="rh-ai-btn" onclick='openRunCoach(${JSON.stringify(run).replace(/'/g, "&#39;")})'>
                 🤖 Ask AI Coach
             </button>
         `;
